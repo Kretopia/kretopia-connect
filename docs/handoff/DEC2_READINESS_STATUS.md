@@ -56,13 +56,13 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | 10 | Manage work and create inside Studio | **Not ready for release** | Ethan's Nov 25 pass only confirms an existing project opens |
 | 11 | Company pages and permissions | **Not ready for release** | Not run |
 | 12 | Inbox and messages | **Not ready for release** | Not run |
-| 13 | Events | **Not ready for release** | In place: free RSVP and its email; a paid event is entered only with a paid ticket (#387, applied); a paid buyer is put on the guest list by the page (#386). Not run: organizer and guest on two accounts; check-in |
+| 13 | Events | **Not ready for release** | In place: free RSVP and its email; paid event tickets paused (see decision 2); a paid event is entered only with a paid ticket (#387, applied); a paid buyer returning from an earlier checkout is put on the guest list by the page (#386). Not run: organizer and guest on two accounts; check-in |
 | 14 | SoundStages | **Not ready for release** | See priority 4: the technical path works with two accounts; the human audio/video check and the listener-only guest question are open |
-| 15 | Final device and recovery pass | **Blocked** | Paid Stage tickets are paused (#385). kretopia-app's `verify-stage-ticket` (imports a file that is not there) and `verify-event-ticket` (writes `"rsvp"`) cannot be fixed without Lovable credits. Monitoring and recovery are not defined |
+| 15 | Final device and recovery pass | **Blocked** | Paid Stage tickets are paused (#385) and so are paid event tickets. kretopia-app's `verify-stage-ticket` (imports a file that is not there) and `verify-event-ticket` (writes `"rsvp"`) cannot be fixed without Lovable credits. Monitoring and recovery are not defined |
 
 ## Decisions for Noé (everything else is already decided)
 1. **Co-Sign repair: done** (26 Nov, run in kretopia-app's SQL Editor; the function now raises the credits guard flag). Nothing left.
-2. **Paid event tickets** (affects one live paid event): `verify-event-ticket` writes `"rsvp"`, which the guest-list table does not allow, so a buyer may not be seated by it. Either keep selling and let the page seat the buyer (#386), or pause paid event tickets like paid Stage tickets. Recommendation: pause until the function is fixed.
+2. **Paid event tickets: paused** (Noé, 26 Nov). No screen starts a Kretopia checkout for an event ticket: the event page shows "online ticket sales are unavailable", and the last checkout call in the app was removed (a test fails if one comes back). Events whose tickets are sold elsewhere still send people to that link. A buyer returning from an earlier checkout is still seated by the page (#386). Still open, and only fixable in kretopia-app: the `purchase-event-ticket` function itself can still be called directly, and `verify-event-ticket` still writes `"rsvp"`.
 3. **Availability default:** to stop new accounts being stored as "Available", run `ALTER TABLE public.profiles ALTER COLUMN availability_status DROP DEFAULT;` in the SQL Editor. It changes no existing row. Existing "available" values cannot be told apart from chosen ones, so they are left alone.
 4. **Sender name on the confirmation email** (`thrivein.io` today): needs the sender domain changed in kretopia-app.
 
