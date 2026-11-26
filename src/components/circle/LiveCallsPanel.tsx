@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { STAGE_LINK_COPY, stageJoinSignInPath, stageLinkState } from "@/lib/stageLinkState";
@@ -36,6 +36,14 @@ export function LiveCallsPanel({ joinStageId }: LiveCallsPanelProps) {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  // The landing search (SoundStages scope) opens this page with its words in ?q=.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const stageQuery = (searchParams.get("q") ?? "").trim().slice(0, 120);
+  const clearStageQuery = () => {
+    const next = new URLSearchParams(searchParams);
+    next.delete("q");
+    setSearchParams(next, { replace: true });
+  };
 
   const [goLiveOpen, setGoLiveOpen] = useState(false);
   const [scheduleOpen, setScheduleOpen] = useState(false);
@@ -251,8 +259,18 @@ export function LiveCallsPanel({ joinStageId }: LiveCallsPanelProps) {
       <section id="stage-grid" className="space-y-2 scroll-mt-20" aria-label="Live and upcoming stages">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-sm font-semibold text-foreground">Live stages &amp; upcoming sessions</h3>
+          {stageQuery ? (
+            <button
+              type="button"
+              onClick={clearStageQuery}
+              className="inline-flex min-h-8 items-center gap-1.5 rounded-full border border-border px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label={`Clear the search for ${stageQuery}`}
+            >
+              “{stageQuery}” <span aria-hidden>×</span>
+            </button>
+          ) : null}
         </div>
-        <StageGrid onJoinSoundStage={handleJoinStage} onOpenStage={requestGoLive} />
+        <StageGrid onJoinSoundStage={handleJoinStage} onOpenStage={requestGoLive} query={stageQuery} />
       </section>
 
       {/* Call Sheet — upcoming Speed Sessions */}

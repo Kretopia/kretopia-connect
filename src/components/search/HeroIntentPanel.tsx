@@ -1,5 +1,5 @@
 import type { KeyboardEvent, ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Briefcase, Building2, ChevronRight, Clapperboard, Music, Palette, Search, Wand2, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, Briefcase, Building2, CalendarDays, ChevronRight, Clapperboard, Music, Palette, Radio, Search, Wand2, type LucideIcon } from "lucide-react";
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,11 +12,12 @@ import {
   type ExploreByItem,
   type SearchIntent,
 } from "@/lib/searchIntent";
+import { scopeSources, searchScopeMeta, type SearchScope } from "@/lib/heroSearchScope";
 import { cn } from "@/lib/utils";
 
 /** What the panel needs of a result row: people and opportunities share the same shape. */
 export interface IntentResult {
-  type: "creator" | "gig";
+  type: "creator" | "gig" | "event";
   id: string;
   title: string;
   subtitle?: string;
@@ -47,6 +48,14 @@ interface HeroIntentPanelProps {
   /** Open one section's full search (the Grid for People and Skills, Scout for Opportunities). */
   onSeeAll: (intent: SearchIntent) => void;
   onRetry: () => void;
+  /**
+   * The search scope. Left out, the panel answers in its three sections as it always did. Given, only the sources of that scope are
+   * shown, Events has its own section, and SoundStages offers its search (its live list opens on its own page).
+   */
+  scope?: SearchScope;
+  events?: IntentResult[];
+  /** Open the full search behind a scope (its own page, with the words in its search bar). */
+  onSeeAllScope?: (scope: SearchScope) => void;
 }
 
 const row =
@@ -64,6 +73,34 @@ function Section({ intent, children }: { intent: SearchIntent; children: ReactNo
       </header>
       {children}
     </section>
+  );
+}
+
+/** A section that is not one of the three intents (Events): same header, same rows. */
+function PlainSection({ label, caption, children }: { label: string; caption: string; children: ReactNode }) {
+  return (
+    <section aria-label={label} className="border-b border-border last:border-b-0">
+      <header className="flex items-baseline justify-between gap-3 px-4 pb-1 pt-3">
+        <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{label}</h3>
+        <span className="truncate text-[10px] text-muted-foreground/80">{caption}</span>
+      </header>
+      {children}
+    </section>
+  );
+}
+
+/** Nothing typed yet in a scope that has no vocabulary to browse: say what the scope searches. */
+function ScopeHint({ scope }: { scope: SearchScope }) {
+  const meta = searchScopeMeta(scope);
+  const Icon = scope === "events" ? CalendarDays : scope === "soundstages" ? Radio : scope === "scout" ? Briefcase : Search;
+  return (
+    <div className="flex items-start gap-3 px-4 py-4">
+      <span className={iconTile}><Icon className="h-3.5 w-3.5" aria-hidden /></span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-foreground">Searching {meta.label}</span>
+        <span className="block text-xs text-muted-foreground">{meta.description}. Type a name, a skill, a discipline or a keyword.</span>
+      </span>
+    </div>
   );
 }
 
@@ -87,7 +124,7 @@ function ResultRow({ result, onSelect, onKeyDown }: { result: IntentResult; onSe
         </Avatar>
       ) : (
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-          <Briefcase className="h-3.5 w-3.5 text-primary" aria-hidden />
+          {result.type === "event" ? <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden /> : <Briefcase className="h-3.5 w-3.5 text-primary" aria-hidden />}
         </span>
       )}
       <span className="min-w-0 flex-1">
@@ -156,18 +193,25 @@ function ExploreBy({ category, onCategoryChange, onKeyDown, onExplore }: Pick<He
  * up to three sections (People, Skills, Opportunities), each only if it has something, each saying which feature it belongs to.
  * Real, public-safe records for a guest; semantic tokens only; the loader is the shared K mark.
  */
-export function HeroIntentPanel({ query, people, opportunities, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSeeAll, onRetry }: HeroIntentPanelProps) {
+export function HeroIntentPanel({ query, people, opportunities, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSeeAll, onRetry, scope, events = [], onSeeAllScope }: HeroIntentPanelProps) {
   const typed = query.trim();
-  if (!typed) return <ExploreBy category={category} onCategoryChange={onCategoryChange} onKeyDown={onKeyDown} onExplore={onExplore} />;
+  const sources = scope ? scopeSources(scope) : { people: true, skills: true, opportunities: true, events: false, stages: false };
+  // The vocabulary ("Explore by") is for All and Match; the other scopes have none to browse.
+  if (!typed) {
+    return !scope || sources.skills ? <ExploreBy category={category} onCategoryChange={onCategoryChange} onKeyDown={onKeyDown} onExplore={onExplore} /> : <ScopeHint scope={scope} />;
+  }
 
-  const skills = searchExploreBy(typed, 4);
-  const hasAny = people.length > 0 || skills.length > 0 || opportunities.length > 0;
+  const skills = sources.skills ? searchExploreBy(typed, 4) : [];
+  const shownPeople = sources.people ? people : [];
+  const shownOpportunities = sources.opportunities ? opportunities : [];
+  const shownEvents = sources.events ? events : [];
+  const hasAny = shownPeople.length > 0 || skills.length > 0 || shownOpportunities.length > 0 || shownEvents.length > 0;
 
   return (
     <>
-      {people.length > 0 ? (
+      {shownPeople.length > 0 ? (
         <Section intent="people">
-          {people.map((p) => <ResultRow key={`creator-${p.id}`} result={p} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
+          {shownPeople.map((p) => <ResultRow key={`creator-${p.id}`} result={p} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
           <SeeAll label={`See everyone for “${typed}”`} onClick={() => onSeeAll("people")} onKeyDown={onKeyDown} />
         </Section>
       ) : null}
@@ -191,14 +235,27 @@ export function HeroIntentPanel({ query, people, opportunities, loading, error, 
         </Section>
       ) : null}
 
-      {opportunities.length > 0 ? (
+      {shownOpportunities.length > 0 ? (
         <Section intent="opportunities">
-          {opportunities.map((o) => <ResultRow key={`gig-${o.id}`} result={o} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
+          {shownOpportunities.map((o) => <ResultRow key={`gig-${o.id}`} result={o} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
           <SeeAll label={`Search Scout for “${typed}”`} onClick={() => onSeeAll("opportunities")} onKeyDown={onKeyDown} />
         </Section>
       ) : null}
 
-      {loading && !hasAny ? <KretopiaLoader size="sm" label="Searching Kretopia" className="px-4" /> : null}
+      {shownEvents.length > 0 ? (
+        <PlainSection label="Events" caption="Coming up on Kretopia">
+          {shownEvents.map((e) => <ResultRow key={`event-${e.id}`} result={e} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
+          <SeeAll label={`Search Events for “${typed}”`} onClick={() => onSeeAllScope?.("events")} onKeyDown={onKeyDown} />
+        </PlainSection>
+      ) : null}
+
+      {sources.stages ? (
+        <PlainSection label="SoundStages" caption="Live creative rooms">
+          <SeeAll label={`Search SoundStages for “${typed}”`} onClick={() => onSeeAllScope?.("soundstages")} onKeyDown={onKeyDown} />
+        </PlainSection>
+      ) : null}
+
+      {loading && !hasAny && !sources.stages ? <KretopiaLoader size="sm" label="Searching Kretopia" className="px-4" /> : null}
 
       {!loading && error && !hasAny ? (
         <div className="px-4 py-4 text-center">
@@ -210,11 +267,25 @@ export function HeroIntentPanel({ query, people, opportunities, loading, error, 
         </div>
       ) : null}
 
-      {!loading && !error && !hasAny ? (
+      {!loading && !error && !hasAny && !sources.stages ? (
         <div>
-          <p className="px-4 pb-1 pt-3 text-sm text-muted-foreground">Nothing matches “{typed}” yet. Search the whole of Kretopia instead:</p>
-          <SeeAll label={`Search people and skills for “${typed}”`} onClick={() => onSeeAll("people")} onKeyDown={onKeyDown} />
-          <SeeAll label={`Search opportunities for “${typed}”`} onClick={() => onSeeAll("opportunities")} onKeyDown={onKeyDown} />
+          {scope && scope !== "all" ? (
+            <>
+              <p className="px-4 pb-1 pt-3 text-sm text-muted-foreground">Nothing matches “{typed}” in {searchScopeMeta(scope).label} yet. Open its full search:</p>
+              <SeeAll
+                label={`Search ${searchScopeMeta(scope).label} for “${typed}”`}
+                onClick={() => (scope === "events" ? onSeeAllScope?.("events") : onSeeAll(scope === "scout" ? "opportunities" : scope === "match" ? "skills" : "people"))}
+                onKeyDown={onKeyDown}
+              />
+            </>
+          ) : (
+            <>
+              <p className="px-4 pb-1 pt-3 text-sm text-muted-foreground">Nothing matches “{typed}” yet. Search the whole of Kretopia instead:</p>
+              <SeeAll label={`Search people and skills for “${typed}”`} onClick={() => onSeeAll("people")} onKeyDown={onKeyDown} />
+              <SeeAll label={`Search opportunities for “${typed}”`} onClick={() => onSeeAll("opportunities")} onKeyDown={onKeyDown} />
+              {scope === "all" ? <SeeAll label={`Search events for “${typed}”`} onClick={() => onSeeAllScope?.("events")} onKeyDown={onKeyDown} /> : null}
+            </>
+          )}
         </div>
       ) : null}
     </>

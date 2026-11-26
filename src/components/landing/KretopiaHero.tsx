@@ -1,6 +1,11 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
+ * v14: "One search". The journeys and the three actions under the search are gone: the search is the entry point. A scope at the
+ * start of the field (All by default, then People, Scout, Match, Events, SoundStages) says where the words are looked for; the scope
+ * travels with the query (see heroSearchScope.ts), the field keeps its microphone, a clear button and the submit button, and one
+ * line under it says you can search everywhere or narrow it. Choosing People, Match or Scout tints the horizon.
+ *
  * v13: "Twilight". The planet lost its orbit and satellites and gained a real dusk: a horizon band and atmosphere whose colour
  * cools with height along the logo's own gradient (orange, magenta, violet, blue), a low sun that drifts along a softly lit limb,
  * clusters of city lights on the dark side and stars that thin out towards the glow. The journeys and the three actions merged
@@ -75,12 +80,10 @@ import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
-import { HERO_SEARCH_PLACEHOLDER } from "@/lib/searchIntent";
-import { HeroUniverse } from "@/components/landing/kretopia/HeroUniverse";
-import { HeroDock } from "@/components/landing/kretopia/HeroDock";
+import { HeroUniverse, type HeroTint } from "@/components/landing/kretopia/HeroUniverse";
 import { HeroPromptRotator } from "@/components/landing/kretopia/HeroPromptRotator";
-import type { HeroPrompt, JourneyId } from "@/lib/heroJourneys";
-import { HERO_SEARCH_PLACEHOLDER_COMPACT } from "@/lib/searchIntent";
+import type { HeroPrompt } from "@/lib/heroJourneys";
+import { DEFAULT_SEARCH_SCOPE, HERO_SEARCH_GUIDANCE, scopePlaceholder, type SearchScope } from "@/lib/heroSearchScope";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
 import kretoBodyUrl from "@/assets/brand/kreto/hero-wave-hd-body.webp";
@@ -312,8 +315,9 @@ export const KretopiaHero = () => {
   const [searchFocused, setSearchFocused] = useState(false);
   const [finePointer, setFinePointer] = useState(false);
   const [narrow, setNarrow] = useState(isNarrowViewport);
-  /** The dock's journey under the pointer or focus: the horizon above the planet takes its colour. */
-  const [tint, setTint] = useState<JourneyId | null>(null);
+  /** Where the search looks: All by default, or one area. The horizon above the planet takes the colour of People, Match and Scout. */
+  const [scope, setScope] = useState<SearchScope>(DEFAULT_SEARCH_SCOPE);
+  const tint: HeroTint | null = scope === "people" ? "people" : scope === "match" ? "skills" : scope === "scout" ? "opportunities" : null;
 
   // How far the hero has scrolled out of view: the planet sinks a little slower than the page.
   const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
@@ -399,7 +403,7 @@ export const KretopiaHero = () => {
         <HeroUniverse reducedMotion={reducedMotion} pointerX={smoothX} pointerY={smoothY} scroll={scrollYProgress} parallax={finePointer} energized={searchFocused} tint={tint} />
       </div>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-[1100px] flex-col items-center px-5 pb-28 pt-8 text-center sm:px-8 sm:pb-20 sm:pt-10 lg:px-12">
+      <div className="relative z-[1] mx-auto flex w-full max-w-[1100px] flex-col items-center px-5 pb-36 pt-8 text-center sm:px-8 sm:pb-32 sm:pt-10 lg:px-12">
         {/* The mark and the tagline on one line: the brand first, then the headline. */}
         <motion.div {...rise(0)} className="mb-4 flex items-center justify-center gap-3">
           <BrandLogo iconOnly size="sm" />
@@ -435,29 +439,29 @@ export const KretopiaHero = () => {
           Discover people, skills and opportunities across the creative economy.
         </motion.p>
 
-        {/* The search is the app's real UnifiedSearchDropdown: its results, routing and accessibility are untouched. */}
+        {/* The search is the app's real UnifiedSearchDropdown: one field, a scope at its start (All by default), the microphone, a
+            clear button and the submit button. Its results, routing and accessibility are the component's own. */}
         <motion.div
           {...rise(0.3)}
-          className="relative mt-7 w-full max-w-[46rem] sm:mt-8"
+          className="relative mt-7 w-full max-w-[48rem] sm:mt-8"
           onFocusCapture={() => setSearchFocused(true)}
           onBlurCapture={() => setSearchFocused(false)}
         >
           <UnifiedSearchDropdown
             variant="hero"
             intentSearch
-            placeholder={narrow ? HERO_SEARCH_PLACEHOLDER_COMPACT : HERO_SEARCH_PLACEHOLDER}
+            scopeSearch
+            scope={scope}
+            onScopeChange={setScope}
+            placeholder={scopePlaceholder(scope, narrow)}
             value={query}
             onValueChange={setQuery}
             onOpenChange={setSearchOpen}
           />
-          <div className="mt-2">
+          <p className="mt-3 text-xs text-muted-foreground sm:text-[13px]">{HERO_SEARCH_GUIDANCE}</p>
+          <div className="mt-1.5">
             <HeroPromptRotator reducedMotion={reducedMotion} paused={searchOpen || searchFocused} onPick={pickPrompt} />
           </div>
-        </motion.div>
-
-        {/* One block, one width: the three journeys and the three actions share a single panel under the search. */}
-        <motion.div {...rise(0.48)} className="mt-5 w-full max-w-[46rem]">
-          <HeroDock onActiveChange={setTint} />
         </motion.div>
       </div>
 

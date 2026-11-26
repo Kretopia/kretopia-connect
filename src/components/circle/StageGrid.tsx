@@ -6,10 +6,13 @@ import { AlertCircle, RefreshCw, Radio } from "lucide-react";
 import { StageCard, type StageCardData } from "./StageCard";
 import type { SoundStage } from "./SoundStagesRail";
 import { StudioSectionTabs } from "@/components/studio-reference/StudioSectionTabs";
+import { filterStagesByQuery } from "@/lib/stageSearch";
 
 interface StageGridProps {
   onJoinSoundStage: (stage: SoundStage) => void;
   onOpenStage: () => void;
+  /** Words from the landing search (?q=): only the stages that match are listed. */
+  query?: string;
 }
 
 /**
@@ -17,7 +20,7 @@ interface StageGridProps {
  * scheduled/live Curated Stages together, one card shape, one responsive
  * grid. Replaces the previous two separately-styled horizontal rails.
  */
-export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
+export function StageGrid({ onJoinSoundStage, onOpenStage, query }: StageGridProps) {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [cards, setCards] = useState<StageCardData[] | null>(null);
@@ -175,6 +178,17 @@ export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
     );
   }
 
+  const searching = (query ?? "").trim() !== "";
+  if (searching && filterStagesByQuery(cards, query).length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-center space-y-1">
+        <Radio className="h-5 w-5 text-muted-foreground mx-auto mb-1" aria-hidden />
+        <p className="text-sm font-semibold">No stage matches “{(query ?? "").trim()}”</p>
+        <p className="text-sm text-muted-foreground">Try other words, or open your own stage.</p>
+      </div>
+    );
+  }
+
   if (cards.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border bg-card p-5 text-center space-y-2">
@@ -200,19 +214,20 @@ export function StageGrid({ onJoinSoundStage, onOpenStage }: StageGridProps) {
     );
   }
 
-  const liveCards = cards.filter((c) => c.status === "live");
-  const upcomingCards = cards.filter((c) => c.status !== "live");
+  const shown = filterStagesByQuery(cards, query);
+  const liveCards = shown.filter((c) => c.status === "live");
+  const upcomingCards = shown.filter((c) => c.status !== "live");
 
   // Only offer the Live/Upcoming split once there's actually something on
   // both sides of it — otherwise it'd be a filter with a dead second tab.
   if (liveCards.length === 0 || upcomingCards.length === 0) {
-    return <StageCardGrid cards={cards} onAction={handleAction} />;
+    return <StageCardGrid cards={shown} onAction={handleAction} />;
   }
 
   return (
     <StudioSectionTabs
       tabs={[
-        { id: "all", label: `All (${cards.length})`, content: <StageCardGrid cards={cards} onAction={handleAction} /> },
+        { id: "all", label: `All (${shown.length})`, content: <StageCardGrid cards={shown} onAction={handleAction} /> },
         { id: "live", label: `Live (${liveCards.length})`, content: <StageCardGrid cards={liveCards} onAction={handleAction} /> },
         { id: "upcoming", label: `Upcoming (${upcomingCards.length})`, content: <StageCardGrid cards={upcomingCards} onAction={handleAction} /> },
       ]}
