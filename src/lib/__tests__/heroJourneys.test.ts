@@ -19,6 +19,12 @@ describe("hero journeys", () => {
     expect(HERO_JOURNEYS.map((j) => j.feature)).toEqual(["Passport", "Match", "Scout"]);
   });
 
+  it("each carries a one-line description and a distinct logo-gradient accent", () => {
+    for (const j of HERO_JOURNEYS) expect(j.description.trim().length).toBeGreaterThan(10);
+    expect(new Set(HERO_JOURNEYS.map((j) => j.accent)).size).toBe(HERO_JOURNEYS.length);
+    expect(HERO_JOURNEYS.map((j) => j.accent)).toEqual(["--k-g-2", "--k-g-3", "--k-g-4"]);
+  });
+
   it("only point at routes the app already has", () => {
     for (const target of [...HERO_JOURNEYS, ...HERO_SECONDARY_CTAS]) {
       // Scout's path is the shared constant, everything else is written out.

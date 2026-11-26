@@ -257,7 +257,11 @@ export function KretoLandingFlight({ ready }: { ready: boolean }) {
       const start = hero.getBoundingClientRect();
       const visibleHero = start.width > 0;
       const x0 = visibleHero ? start.left - bounds.left : vw - size - 16;
-      const y0 = visibleHero ? docY(start.top) : Math.min(vh * 0.7, 620);
+      // Without the hero's waving slot (below lg) he starts on the planet's limb at the foot of the hero, below its
+      // content, instead of at a fixed screen height where he covered the cards and buttons.
+      const heroSection = hero.closest<HTMLElement>("#kretopia-hero");
+      const limbY = heroSection ? docY(heroSection.getBoundingClientRect().bottom) - size * 1.05 : Math.min(vh * 0.7, 620);
+      const y0 = visibleHero ? docY(start.top) : limbY;
       const fly = (scroll: number, px: number, py: number, extra: Partial<FlightStop> = {}): FlightStop =>
         ({ scroll, x: clampX(px), y: py, rotate: 0, opacity: 1, pose: "fly", ...extra });
       const glide = (scroll: number, px: number, screenY: number) => fly(scroll, px, screenY + scroll - origin);
