@@ -19949,6 +19949,7 @@ export type Database = {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
       }
+      delete_my_account: { Args: never; Returns: undefined }
       delete_group_room: { Args: { _room_id: string }; Returns: boolean }
       dismiss_discovered_credit: {
         Args: { _discovery_id: string }

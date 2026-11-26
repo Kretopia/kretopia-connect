@@ -15,6 +15,7 @@ import { ShareableCreatorCard } from "./ShareableCreatorCard";
 import { useProfileContext } from "@/contexts/ProfileContext";
 import { StorageUsageCard } from "./StorageUsageCard";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
+import { DELETE_ACCOUNT_FAILED_TITLE, deleteAccountFailureMessage, deleteOwnAccount } from "@/lib/accountDeletion";
 
 export const SettingsTab = () => {
   const { toast } = useToast();
@@ -177,25 +178,18 @@ export const SettingsTab = () => {
   const handleDeleteAccount = async () => {
     setLoading(true);
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      // Delete user data (handled by cascade in DB)
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
-      
-      if (error) throw error;
+      await deleteOwnAccount();
 
       toast({
         title: "Account deleted",
         description: "Your account has been permanently deleted",
       });
 
-      await supabase.auth.signOut();
       navigate("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
-        title: "Failed to delete account",
-        description: "Please contact support if this issue persists",
+        title: DELETE_ACCOUNT_FAILED_TITLE,
+        description: deleteAccountFailureMessage(error),
         variant: "destructive",
       });
     } finally {
