@@ -291,7 +291,8 @@ export const PostOpportunityDialog = ({
           application_deadline: formData.application_deadline || null,
           whitelisting_allowed: formData.whitelisting_allowed,
         } as any)
-        .select()
+        // Only the id is read. A bare select() asks for columns clients may not read, and the database refuses the whole insert.
+        .select("id")
         .single();
 
       if (opportunityError) throw opportunityError;

@@ -255,7 +255,9 @@ const PostOpportunity = () => {
         tags: formData.company_name ? [formData.company_name] : [],
         ...(formData.type === "casting" ? casting : {}),
       } as any)
-      .select()
+      // Only the id is needed. A bare select() asks for every column, including the guest-contact and claim-token ones that clients may not
+      // read (20261009100000): the database then refuses the whole insert with "permission denied for table opportunities".
+      .select("id")
       .single();
 
     if (insertError) throw insertError;

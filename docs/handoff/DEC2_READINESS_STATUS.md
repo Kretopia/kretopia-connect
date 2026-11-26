@@ -49,12 +49,12 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 | 03 | Identity and Co-Sign | **Working** for Co-Sign; identity check not enforced | Request, recipient answer and the recipient's own Passport all work since the repair (see table above). ID/selfie verification is not enforced (earlier decision). To check: once a credit has one co-sign, its card no longer offers "Ask for a co-sign", yet two are needed to reach Verified: confirm where a second request is made |
 | 04 | A reason to stay | **Not ready for release** | Not run |
 | 05 | Share the Passport and EPK | **Not ready for release** | Public link seen working signed out. Not run: QR scan, WhatsApp, X, LinkedIn, Story asset, tailored EPK, Pro website |
-| 06 | Scout from brief to Studio | **Not ready for release** | Needs a company account and a second creator: not run |
+| 06 | Scout from brief to Studio | **Blocked** (fix ready, not yet live) | Live pass with a QA company account (26 Nov): company mode works (Studios, Gigs, Talent, Pay) but **posting a brief fails**: `permission denied for table opportunities` (HTTP 403). Cause: the post form asked the database for every column of the new row, and clients may not read the guest-contact and claim-token columns (20261009100000), so the database refused the whole insert. Fix in the PR "Post a brief: read back only the id" (both post forms). Not retested live until it is merged and published. Then still to run: creator applies, company interviews and accepts, one Studio project opens |
 | 07 | Smart search, Match and Circle | **Not ready for release** | Not run |
 | 08 | Service booking | **Not ready for release** | Not run (time zone, cancel, reschedule, duplicates) |
 | 09 | Kreto sets up the right project | **Not ready for release** | Not run |
 | 10 | Manage work and create inside Studio | **Not ready for release** | Ethan's Nov 25 pass only confirms an existing project opens |
-| 11 | Company pages and permissions | **Not ready for release** | Not run |
+| 11 | Company pages and permissions | **Not ready for release** | Only the company-mode shell was seen (see item 06). Roles and permissions not run |
 | 12 | Inbox and messages | **Not ready for release** | Not run |
 | 13 | Events | **Not ready for release** | In place: free RSVP and its email; paid event tickets paused (see decision 2); a paid event is entered only with a paid ticket (#387, applied); a paid buyer returning from an earlier checkout is put on the guest list by the page (#386). Not run: organizer and guest on two accounts; check-in |
 | 14 | SoundStages | **Not ready for release** | See priority 4: the technical path works with two accounts; the human audio/video check and the listener-only guest question are open |
@@ -64,7 +64,8 @@ to a made-up person). They carry QA in their names and are safe to delete. **No 
 1. **Co-Sign repair: done** (26 Nov, run in kretopia-app's SQL Editor; the function now raises the credits guard flag). Nothing left.
 2. **Paid event tickets** (affects one live paid event): `verify-event-ticket` writes `"rsvp"`, which the guest-list table does not allow, so a buyer may not be seated by it. Either keep selling and let the page seat the buyer (#386), or pause paid event tickets like paid Stage tickets. Recommendation: pause until the function is fixed.
 3. **Availability default:** no longer needed for the public label (fixed in the page). Optional: `ALTER TABLE public.profiles ALTER COLUMN availability_status DROP DEFAULT;` in the SQL Editor would also stop new rows being stored as "available". It changes no existing row.
-4. **Sender name on the confirmation email** (`thrivein.io` today): needs the sender domain changed in kretopia-app.
+4. **Delete Account does not work for anyone.** The button calls the admin API from the browser (`auth.admin.deleteUser`); the database answers 403 `not_admin` / "User not allowed" (seen live on a QA account). A member cannot delete their account, which is also a privacy obligation. It needs a server-side path: a function in kretopia-app, or a `delete_my_account()` SQL function pasted in its SQL Editor and called by the app. To be built; until then QA accounts must be removed with SQL.
+5. **Sender name on the confirmation email** (`thrivein.io` today): needs the sender domain changed in kretopia-app.
 
 ## Blocked, and by what
 - **Lovable credits (kretopia-app is the backend):** `verify-stage-ticket` and `verify-event-ticket` fixes, `send-transactional-email`, import and search functions, the Stage card counter, the capacity limit on `create-curated-stage`.

@@ -25,8 +25,12 @@ describe("the private Passport route can only ever show the signed-in member's o
   it("the public Passport page is where ids live, and it draws the private link only from the viewer's own id", () => {
     const view = read("src/components/passport/PublicPassportView.tsx");
     const header = read("src/components/passport/PassportPageHeader.tsx");
-    expect(view).toContain('<PassportPageHeader surface="public" viewerId={currentUserId} passportOwnerId={profile.user_id} />');
-    expect(header).toContain("passportNavFor(");
+    // The switch lives on the Passport card now: the view decides it from the signed-in id and the id of the Passport on the page.
+    expect(view).toContain("passportNavFor({");
+    expect(view).toContain("viewerId: currentUserId, passportOwnerId: profile.user_id");
+    // The header carries no link between the views, so it has no ids to build one from.
+    expect(header).not.toContain("passportNavFor(");
+    expect(header).not.toContain("viewerId");
     // the address of the private page is a constant, never built from an id
     expect(read("src/lib/passport/passportNav.ts")).toContain('export const PRIVATE_PASSPORT_PATH = "/profile";');
   });
