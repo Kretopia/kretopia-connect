@@ -28,6 +28,7 @@ import { VibePicker } from "@/components/onboarding/VibePicker";
 import { Palette } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { PROFILE_SELECT } from "@/lib/profile/profileColumns";
+import { DELETE_ACCOUNT_FAILED_TITLE, deleteAccountFailureMessage, deleteOwnAccount } from "@/lib/accountDeletion";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { WrappedShell } from "@/components/wrapped/WrappedShell";
@@ -432,25 +433,20 @@ const Settings = ({ embedded = false }: SettingsProps = {}) => {
   };
 
   const handleDeleteAccount = async () => {
-    if (!user) throw new Error("Not authenticated");
-    
     setLoading(true);
     try {
-      const { error } = await supabase.auth.admin.deleteUser(user.id);
-      
-      if (error) throw error;
+      await deleteOwnAccount();
 
       toast({
         title: "Account deleted",
         description: "Your account has been permanently deleted",
       });
 
-      await supabase.auth.signOut();
       navigate("/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
-        title: "Failed to delete account",
-        description: "Please contact support if this issue persists",
+        title: DELETE_ACCOUNT_FAILED_TITLE,
+        description: deleteAccountFailureMessage(error),
         variant: "destructive",
       });
     } finally {
