@@ -24,6 +24,7 @@ import { APP_URL } from "@/lib/constants";
 import { ScoutFieldCarousel } from "@/components/scout/ScoutFieldCarousel";
 import { groupCreatorsByCraft } from "@/components/discover/creatorCategories";
 import { lazy, Suspense } from "react";
+import { peopleFilterExpression } from "@/lib/scoutPeopleSearch";
 const StartProjectDialog = lazy(() => import("@/components/project/StartProjectFromMatchDialog").then(m => ({ default: m.StartProjectFromMatchDialog })));
 
 const DIRECTORY_TUTORIAL: TutorialStep[] = [
@@ -48,6 +49,8 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
   const [rows, setRows] = useState<DirectoryPassport[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState(searchParams.get("q") || "");
+  // The term the page was opened with: it is what the server is asked for (typing in the box afterwards narrows what is loaded).
+  const linkedQuery = searchParams.get("q") || "";
   const [professionFilter, setProfessionFilter] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [standingFilter, setStandingFilter] = useState("all");
@@ -83,10 +86,15 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
     (async () => {
       setLoading(true);
       setLoadError(false);
-      const { data, error } = await supabase
+      // Arriving with a search term (the hero's Skills and People searches, a shared link) the term is searched on the server, over
+      // everyone: filtering only the 36 loaded profiles would show "nothing" for a skill whose people are further down the list.
+      let request = supabase
         .from("public_profiles_safe")
         .select("user_id,username,full_name,role,avatar_url,cover_image_url,location,verification_tier,level,bio,professional_skills")
-        .not("username", "is", null)
+        .not("username", "is", null);
+      const linkedTerm = peopleFilterExpression(linkedQuery);
+      if (linkedTerm) request = request.or(linkedTerm);
+      const { data, error } = await request
         .order("level", { ascending: false, nullsFirst: false })
         .order("user_id")
         .range((page - 1) * 36, page * 36);
@@ -118,7 +126,7 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
     return () => {
       cancelled = true;
     };
-  }, [page, retry]);
+  }, [page, retry, linkedQuery]);
 
   // Option lists come from the fetched rows: this directory spans every
   // discipline on Kretopia, so there is no fixed enum to guess.
@@ -139,7 +147,12 @@ const PassportDirectory = ({ embedded = false }: { embedded?: boolean }) => {
       if (standingFilter === "verified" && !isVerified(r.verification_tier)) return false;
       if (standingFilter === "working" && isVerified(r.verification_tier)) return false;
       if (!q) return true;
-      return [r.username, r.full_name, r.role, r.location].some((v) => v?.toLowerCase().includes(q));
+      // The words of the search must each be somewhere on the card: name, handle, role, place, bio or listed skills.
+      const haystack = [r.username, r.full_name, r.role, r.location, r.bio, ...(Array.isArray(r.professional_skills) ? r.professional_skills : [])]
+        .filter((v): v is string => typeof v === "string")
+        .join(" ")
+        .toLowerCase();
+      return q.split(/\s+/).every((word) => haystack.includes(word));
     });
     // Your own card first, so it is never lost in 120 others.
     return user?.id ? [...list].sort((a, b) => Number(b.user_id === user.id) - Number(a.user_id === user.id)) : list;

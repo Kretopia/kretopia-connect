@@ -15,6 +15,17 @@ import { PublicWebSearchResults } from "./PublicWebSearchResults";
 import { searchVerificationUsers, VERIFICATION_SEARCH_PAGE_SIZE } from "@/lib/verificationUserSearch";
 import { Button } from "@/components/ui/button";
 import { searchScoutPeople, scoutSearchTarget, SCOUT_PEOPLE_PAGE_SIZE } from "@/lib/scoutPeopleSearch";
+import { HeroIntentPanel, type IntentResult } from "@/components/search/HeroIntentPanel";
+import {
+  DEFAULT_SEARCH_INTENT,
+  SEARCH_INTENTS,
+  exploreByTarget,
+  searchIntentMeta,
+  searchIntentTarget,
+  type ExploreByCategoryId,
+  type ExploreByItem,
+  type SearchIntent,
+} from "@/lib/searchIntent";
 
 interface SearchResult {
   type: "creator" | "credit" | "gig";
@@ -52,6 +63,11 @@ interface UnifiedSearchDropdownProps {
   /** Member picker: first-letter, paged users only; no AI, web or voice calls. */
   usersOnly?: boolean;
   disabled?: boolean;
+  /**
+   * The landing hero's search: People / Skills / Opportunities say what is being looked for (Passport, Match, Scout), and Skills opens
+   * "Explore by". Only meaningful with variant="hero"; the navbar and the share dialog leave it off and keep their own behaviour.
+   */
+  intentSearch?: boolean;
   /** Caps the results list to this height (any CSS length), for a host that knows how much room is left under the field. */
   resultsMaxHeight?: string;
 }
@@ -93,12 +109,18 @@ export function UnifiedSearchDropdown({
   showCatalog,
   usersOnly = false,
   disabled = false,
+  intentSearch = false,
   resultsMaxHeight,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const catalogEnabled = !usersOnly && (showCatalog ?? variant === "hero");
-  const minChars = usersOnly || catalogEnabled ? 1 : 2;
+  const intentMode = intentSearch && variant === "hero" && !usersOnly;
+  const [intent, setIntent] = useState<SearchIntent>(DEFAULT_SEARCH_INTENT);
+  const [exploreCategory, setExploreCategory] = useState<ExploreByCategoryId | null>(null);
+  const exploring = intentMode && intent === "skills";
+  // The old catalog ("Roles") is what Skills → "Explore by" replaces, so the intent search never shows it.
+  const catalogEnabled = !usersOnly && !intentMode && (showCatalog ?? variant === "hero");
+  const minChars = intentMode ? (exploring ? 1 : 2) : usersOnly || catalogEnabled ? 1 : 2;
   const [internalQuery, setInternalQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -142,6 +164,14 @@ export function UnifiedSearchDropdown({
     setLoading(false);
     const trimmedQuery = query.trim();
     setExpandHeroUsers(false);
+    if (exploring) {
+      // Skills has nothing to fetch: "Explore by" is public vocabulary, answered on the spot.
+      setResults([]);
+      setHasMoreUsers(false);
+      setError(false);
+      setHighlightedCreator(null);
+      return;
+    }
     if (trimmedQuery.length < minChars) {
       setOpen(false);
       onOpenChange?.(false);
@@ -159,7 +189,7 @@ export function UnifiedSearchDropdown({
     }
     const timer = setTimeout(() => doSearch(trimmedQuery), usersOnly || variant === "hero" ? 150 : 350);
     return () => { clearTimeout(timer); abortRef.current?.abort(); };
-  }, [query, usersOnly, user?.id, variant]);
+  }, [query, usersOnly, user?.id, variant, intentMode, intent]);
 
   const doSearch = useCallback(async (q: string, appendUsers = false) => {
     abortRef.current?.abort();
@@ -171,6 +201,23 @@ export function UnifiedSearchDropdown({
     setHighlightedCreator(null);
 
     try {
+      if (intentMode) {
+        // One kind of result per intent, both public-safe for a guest.
+        if (intent === "people") {
+          const page = await searchScoutPeople(q, 0);
+          if (controller.signal.aborted) return;
+          setResults(page.users.slice(0, 6).map(p => ({ type: "creator", id: p.user_id, title: p.full_name || "Kretopia user", subtitle: [p.role, p.location].filter(Boolean).join(" · "), avatar: p.avatar_url })));
+        } else {
+          const { data, error: gigError } = await supabase.from("opportunities")
+            .select("id, title, type, compensation, location").eq("status", "active")
+            .ilike("title", `%${q}%`).limit(6);
+          if (controller.signal.aborted) return;
+          if (gigError) throw gigError;
+          setResults((data ?? []).map(o => ({ type: "gig", id: o.id, title: o.title, subtitle: [o.type, o.compensation, o.location].filter(Boolean).join(" · ") })));
+        }
+        setLoading(false);
+        return;
+      }
       if (variant === "hero" && !usersOnly) {
         const offset = appendUsers ? usersOffsetRef.current : 0;
         const [page, scoutResults] = await Promise.all([
@@ -338,7 +385,7 @@ export function UnifiedSearchDropdown({
         setLoading(false);
       }
     }
-  }, [user?.id, usersOnly, variant]);
+  }, [user?.id, usersOnly, variant, intentMode, intent]);
 
   const catalogMatches = catalogEnabled ? searchCatalog(query) : [];
 
@@ -401,8 +448,32 @@ export function UnifiedSearchDropdown({
     }
 
     setQuery("");
-    navigate(scoutSearchTarget(rawQuery));
-  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly]);
+    navigate(intentMode ? searchIntentTarget(intent, trimmedQuery) : scoutSearchTarget(rawQuery));
+  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly, intentMode, intent]);
+
+  // Skills → Explore by → an item: the matching professionals, in Match.
+  const handleExplore = (entry: ExploreByItem) => {
+    setOpen(false);
+    onOpenChange?.(false);
+    setQuery("");
+    setExploreCategory(null);
+    navigate(exploreByTarget(entry));
+  };
+
+  const chooseIntent = (next: SearchIntent) => {
+    if (next === intent) { inputRef.current?.focus(); return; }
+    abortRef.current?.abort();
+    setIntent(next);
+    setExploreCategory(null);
+    setResults([]);
+    setError(false);
+    setLoading(false);
+    setHighlightedCreator(null);
+    const opens = next === "skills" || query.trim().length >= 2;
+    setOpen(opens);
+    onOpenChange?.(opens);
+    inputRef.current?.focus();
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -483,6 +554,30 @@ export function UnifiedSearchDropdown({
 
   return (
     <div ref={wrapperRef} className={cn("relative", className)}>
+      {intentMode && (
+        <div role="tablist" aria-label="What are you looking for?" className="mb-3 grid grid-cols-3 gap-1 rounded-[10px] border border-border bg-card/80 p-1 backdrop-blur-sm">
+          {SEARCH_INTENTS.map((m) => {
+            const active = m.id === intent;
+            return (
+              <button
+                key={m.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                title={m.hint}
+                onClick={() => chooseIntent(m.id)}
+                className={cn(
+                  "min-w-0 rounded-[8px] px-2 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  active ? "bg-primary/15 text-foreground ring-1 ring-primary/40" : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
+                )}
+              >
+                <span className="block truncate text-sm font-semibold leading-tight">{m.label}</span>
+                <span className="block truncate text-[10px] uppercase tracking-[0.18em] opacity-70">{m.destination}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <div className={cn("group relative", isHero && "k-search-hero")}>
           <Search
@@ -505,19 +600,19 @@ export function UnifiedSearchDropdown({
                 suppressReopenRef.current = false;
                 return;
               }
-              if (query.trim().length >= minChars) {
+              if (exploring || query.trim().length >= minChars) {
                 setOpen(true);
                 onOpenChange?.(true);
               }
             }}
             onKeyDown={handleInputKeyDown}
-            placeholder={placeholder}
+            placeholder={intentMode ? searchIntentMeta(intent).placeholder : placeholder}
             autoFocus={autoFocus}
             autoComplete="off"
             disabled={disabled}
             enterKeyHint="search"
             role="combobox"
-            aria-label={usersOnly ? "Search Kretopia users" : "Search a name, project or opportunity"}
+            aria-label={usersOnly ? "Search Kretopia users" : intentMode ? `Search ${searchIntentMeta(intent).label.toLowerCase()}` : "Search a name, project or opportunity"}
             aria-expanded={open}
             aria-controls={listboxId}
             className={cn(
@@ -637,7 +732,7 @@ export function UnifiedSearchDropdown({
       </form>
 
       {/* ═══ DROPDOWN ═══ */}
-      {open && query.trim().length >= minChars && (
+      {open && (query.trim().length >= minChars || exploring) && (
         <div
           id={listboxId}
           role="region"
@@ -655,6 +750,22 @@ export function UnifiedSearchDropdown({
           )}
         >
           <div ref={resultsRef} className="flex flex-col overflow-y-auto max-h-[inherit]">
+            {intentMode ? (
+              <HeroIntentPanel
+                intent={intent}
+                query={query}
+                results={results as IntentResult[]}
+                loading={loading}
+                error={error}
+                category={exploreCategory}
+                onCategoryChange={setExploreCategory}
+                onKeyDown={handleResultKeyDown}
+                onSelectResult={(r) => handleSelect(r as SearchResult)}
+                onExplore={handleExplore}
+                onSubmit={() => submitQuery(query)}
+                onRetry={() => doSearch(query.trim())}
+              />
+            ) : (<>
             {isHero && !usersOnly && <div className="order-first border-b border-border px-4 py-3 text-left"><p className="text-xs font-semibold text-foreground">Explore Kretopia</p></div>}
             {catalogMatches.length > 0 && (
               <div className={cn("border-b border-border px-2 py-3", isHero ? "order-1" : "order-3")}>
@@ -988,6 +1099,7 @@ export function UnifiedSearchDropdown({
                 </p>
               </div>
             )}
+            </>)}
           </div>
         </div>
       )}

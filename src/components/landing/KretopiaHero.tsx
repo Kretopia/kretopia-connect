@@ -473,7 +473,7 @@ export const KretopiaHero = () => {
           >
             Find work on Kretopia
           </p>
-          <UnifiedSearchDropdown variant="hero" placeholder="People, projects, opportunities…" />
+          <UnifiedSearchDropdown variant="hero" intentSearch placeholder="People, projects, opportunities…" />
         </motion.div>
 
         {/* Neutral secondary action follows the active theme; the title
