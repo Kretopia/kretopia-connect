@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { KretopiaHero } from "../KretopiaHero";
 import { SCOUT_PATH } from "@/lib/opportunityRoutes";
-import { HERO_PROMPTS, HERO_PROMPT_INTERVAL_MS } from "@/lib/heroJourneys";
+import { HERO_JOURNEYS, HERO_PROMPTS, HERO_PROMPT_INTERVAL_MS } from "@/lib/heroJourneys";
 
 /**
  * The "Kreto Universe" hero. jsdom performs no layout or painting, so this suite cannot judge the sky itself; that was checked in a
@@ -80,7 +80,14 @@ describe("KretopiaHero — Kreto Universe", () => {
     const nav = screen.getByRole("navigation", { name: "Start with" });
     const links = Array.from(nav.querySelectorAll("a"));
     expect(links.map((a) => a.getAttribute("href"))).toEqual(["/match?tab=browse&view=grid", "/match", SCOUT_PATH]);
-    expect(links.map((a) => a.textContent)).toEqual(["PeoplePassport", "SkillsMatch", "OpportunitiesScout"]);
+    // Each card names the journey, the feature it opens and one line about it.
+    HERO_JOURNEYS.forEach((journey, i) => {
+      const text = links[i].textContent ?? "";
+      expect(text).toContain(journey.label);
+      expect(text).toContain(journey.feature);
+      expect(text).toContain(journey.description);
+      expect(links[i].getAttribute("style")).toContain(journey.accent);
+    });
   });
 
   it("clicking a journey fires exactly one analytics event naming it", () => {
@@ -90,21 +97,21 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(trackLandingCta).toHaveBeenCalledWith("hero_journey_skills", "hero", { label: "Skills", destination: "Match" });
   });
 
-  it("has three secondary actions, outlined (not the glass CTA), in equal grid tracks, on the navbar's own routes", () => {
+  it("has three actions in equal grid tracks on the navbar's own routes: one open door, two quieter siblings", () => {
     renderHero();
     const labels = ["Explore Kretopia", "For Creatives", "For Companies"];
     const hrefs = ["/discover", "/passport", "/post-opportunity"];
     labels.forEach((label, i) => {
       const link = screen.getByRole("link", { name: label });
       expect(link).toHaveAttribute("href", hrefs[i]);
-      expect(link.className).not.toMatch(/\bbtn-glass\b/);
       expect(link.className).toContain("rounded-[var(--k-hero-radius)]");
+      expect(link.className).toContain("k-cta-future");
+      expect(link).toHaveAttribute("data-cta", i === 0 ? "primary" : "secondary");
     });
     const grid = screen.getByRole("link", { name: "For Creatives" }).parentElement as HTMLElement;
     expect(grid.className).toMatch(/\bgrid\b/);
     expect(grid.className).toContain("sm:grid-cols-3");
-    // None of them is a primary: the search is.
-    expect(document.querySelector('[data-cta="primary"]')).toBeNull();
+    expect(document.querySelectorAll('[data-cta="primary"]')).toHaveLength(1);
   });
 
   it("clicking a secondary action fires exactly one analytics event", () => {
@@ -146,7 +153,7 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(sky.closest('[aria-hidden="true"]')).not.toBeNull();
   });
 
-  it("draws the sky as SVG, with no image to download", () => {
+  it("draws the planet from CSS and SVG, with no <img> to download and no canvas", () => {
     const { container } = renderHero();
     const sky = container.querySelector("[data-universe]") as HTMLElement;
     expect(sky.querySelector("svg")).not.toBeNull();
@@ -157,6 +164,7 @@ describe("KretopiaHero — Kreto Universe", () => {
     reducedMotion = true;
     const { container } = renderHero();
     expect(container.querySelectorAll("[data-universe] [data-anim]")).toHaveLength(0);
+    expect(container.querySelector("[data-universe]")).not.toHaveAttribute("data-motion");
     expect(container.querySelector("[data-universe] [style*='animation']")).toBeNull();
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toBeInTheDocument();
@@ -170,5 +178,6 @@ describe("KretopiaHero — Kreto Universe", () => {
   it("with motion allowed the sky has its slow loops", () => {
     const { container } = renderHero();
     expect(container.querySelectorAll("[data-universe] [data-anim]").length).toBeGreaterThan(0);
+    expect(container.querySelector("[data-universe]")).toHaveAttribute("data-motion");
   });
 });

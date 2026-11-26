@@ -12,6 +12,10 @@ export interface HeroJourney {
   label: string;
   /** The feature the journey opens, shown small next to the label. */
   feature: "Passport" | "Match" | "Scout";
+  /** One line under the title on a card. */
+  description: string;
+  /** The logo-gradient stop this journey wears (violet, magenta, orange), as a CSS variable name. */
+  accent: "--k-g-2" | "--k-g-3" | "--k-g-4";
   to: string;
   analyticsId: string;
 }
@@ -21,9 +25,9 @@ export interface HeroJourney {
  * people matched to what you do; Opportunities opens Scout.
  */
 export const HERO_JOURNEYS: readonly HeroJourney[] = [
-  { id: "people", label: "People", feature: "Passport", to: "/match?tab=browse&view=grid", analyticsId: "hero_journey_people" },
-  { id: "skills", label: "Skills", feature: "Match", to: "/match", analyticsId: "hero_journey_skills" },
-  { id: "opportunities", label: "Opportunities", feature: "Scout", to: SCOUT_PATH, analyticsId: "hero_journey_opportunities" },
+  { id: "people", label: "People", feature: "Passport", description: "Meet the creatives behind the work.", accent: "--k-g-2", to: "/match?tab=browse&view=grid", analyticsId: "hero_journey_people" },
+  { id: "skills", label: "Skills", feature: "Match", description: "Find the right people by craft and expertise.", accent: "--k-g-3", to: "/match", analyticsId: "hero_journey_skills" },
+  { id: "opportunities", label: "Opportunities", feature: "Scout", description: "Jobs, projects and collaborations, open now.", accent: "--k-g-4", to: SCOUT_PATH, analyticsId: "hero_journey_opportunities" },
 ];
 
 export interface HeroSecondaryCta {
