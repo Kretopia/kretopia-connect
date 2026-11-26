@@ -1,9 +1,10 @@
 /**
- * What the hero search is for. The three intents say what a visitor is looking for and which feature answers it; "Explore by" then
- * narrows or opens up the Skills intent. Nothing here reads user data: it is public vocabulary and routing, so a guest gets all of it.
+ * What the hero search finds. One field, no mode to pick: as someone types, the answers come back in three sections, each saying
+ * which feature it belongs to, and Enter goes to the section that has something. Nothing here reads user data: it is public
+ * vocabulary and routing, so a guest gets all of it.
  *
- *   People        -> Passport   find someone by name, or browse creative profiles
- *   Skills        -> Match      find professionals by discipline, skill or expertise
+ *   People        -> Passport   a name, or creative profiles
+ *   Skills        -> Match      professionals by discipline, skill or expertise (the Grid, with the words in its search bar)
  *   Opportunities -> Scout      jobs, projects and collaborations
  */
 
@@ -11,42 +12,47 @@ export type SearchIntent = "people" | "skills" | "opportunities";
 
 export interface SearchIntentMeta {
   id: SearchIntent;
+  /** The section's title in the results. */
   label: string;
-  /** The feature the search lands in, shown under the label. */
+  /** The feature the section belongs to. */
   destination: "Passport" | "Match" | "Scout";
-  placeholder: string;
-  /** One line that says what this intent finds. */
-  hint: string;
+  /** What the section's rows are, in a few words under the title. */
+  caption: string;
 }
 
 export const SEARCH_INTENTS: readonly SearchIntentMeta[] = [
-  { id: "people", label: "People", destination: "Passport", placeholder: "Find someone by name…", hint: "Find someone by name or discover creative profiles." },
-  { id: "skills", label: "Skills", destination: "Match", placeholder: "A discipline, skill or expertise…", hint: "Find professionals by discipline, skill or expertise." },
-  { id: "opportunities", label: "Opportunities", destination: "Scout", placeholder: "Jobs, projects, collaborations…", hint: "Discover jobs, projects and collaborations." },
+  { id: "people", label: "People", destination: "Passport", caption: "Passports on Kretopia" },
+  { id: "skills", label: "Skills", destination: "Match", caption: "Professionals in Match" },
+  { id: "opportunities", label: "Opportunities", destination: "Scout", caption: "Open now in Scout" },
 ];
-
-export const DEFAULT_SEARCH_INTENT: SearchIntent = "people";
 
 export const searchIntentMeta = (intent: SearchIntent): SearchIntentMeta =>
   SEARCH_INTENTS.find((i) => i.id === intent) ?? SEARCH_INTENTS[0];
 
+/** What the field says before anything is typed. */
+export const HERO_SEARCH_PLACEHOLDER = "Search a name, a skill or an opportunity";
+
+/** Match's Grid: where people are searched. The words travel as ?q= and arrive typed into the Grid's own search bar. */
+const MATCH_GRID = "/match?tab=browse&view=grid";
+
 /**
- * Where an intent's search lands. People opens the Passport directory, Skills opens Match's directory (the matching professionals),
- * Opportunities opens Scout. The term travels as ?q=, which all three already read.
+ * Where a search lands. People and Skills open Match's Grid with the words already in its search bar; Opportunities opens Scout.
+ * The term travels as ?q=, which both read.
  */
 export function searchIntentTarget(intent: SearchIntent, query: string): string {
   const q = encodeURIComponent(query.trim());
-  if (intent === "skills") return `/match?tab=directory&q=${q}`;
   if (intent === "opportunities") return `/scout?q=${q}`;
-  return `/match?tab=directory&q=${q}`;
+  return `${MATCH_GRID}&q=${q}`;
 }
 
-/** The empty-query destinations, for "see everyone" style links. */
-export const SEARCH_INTENT_HOME: Record<SearchIntent, string> = {
-  people: "/match?tab=directory",
-  skills: "/match",
-  opportunities: "/scout",
-};
+/**
+ * Where Enter goes when nothing was picked. People and Skills share the Grid, so a name, a craft or a skill all land there; only a
+ * search whose single answer is an open opportunity goes to Scout. With no answer at all it is still the Grid, which searches in full.
+ */
+export function searchEnterTarget(query: string, found: { people: number; skills: number; opportunities: number }): string {
+  const scoutOnly = found.opportunities > 0 && found.people === 0 && found.skills === 0;
+  return searchIntentTarget(scoutOnly ? "opportunities" : "people", query);
+}
 
 // ── Skills → "Explore by" ────────────────────────────────────────────────────────────────────────────────────────────────
 

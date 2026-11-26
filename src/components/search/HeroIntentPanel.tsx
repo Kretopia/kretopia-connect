@@ -1,9 +1,8 @@
 import type { KeyboardEvent, ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Briefcase, Building2, ChevronRight, Clapperboard, Music, Palette, User, Wand2, type LucideIcon } from "lucide-react";
+import { ArrowLeft, ArrowRight, Briefcase, Building2, ChevronRight, Clapperboard, Music, Palette, Search, Wand2, type LucideIcon } from "lucide-react";
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   EXPLORE_BY,
   exploreByCategory,
@@ -33,9 +32,9 @@ const CATEGORY_ICON: Record<ExploreByCategoryId, LucideIcon> = {
 };
 
 interface HeroIntentPanelProps {
-  intent: SearchIntent;
   query: string;
-  results: IntentResult[];
+  people: IntentResult[];
+  opportunities: IntentResult[];
   loading: boolean;
   error: boolean;
   /** The "Explore by" category that is open, or null for the list of categories. */
@@ -45,66 +44,63 @@ interface HeroIntentPanelProps {
   onKeyDown: (e: KeyboardEvent<HTMLButtonElement>) => void;
   onSelectResult: (result: IntentResult) => void;
   onExplore: (item: ExploreByItem) => void;
-  /** Sends the typed words to the intent's own feature (Passport, Match or Scout). */
-  onSubmit: () => void;
+  /** Open one section's full search (the Grid for People and Skills, Scout for Opportunities). */
+  onSeeAll: (intent: SearchIntent) => void;
   onRetry: () => void;
 }
 
-const eyebrow = "px-4 pb-1.5 pt-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground";
 const row =
   "group flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none";
+const iconTile =
+  "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 text-foreground/80 transition-colors group-hover:border-primary/40 group-hover:text-primary";
 
-function SubmitRow({ label, query, onSubmit, onKeyDown }: { label: string; query: string; onSubmit: () => void; onKeyDown: HeroIntentPanelProps["onKeyDown"] }) {
+function Section({ intent, children }: { intent: SearchIntent; children: ReactNode }) {
+  const meta = searchIntentMeta(intent);
   return (
-    <Button
-      variant="ghost"
-      data-search-result
-      onKeyDown={onKeyDown}
-      onClick={onSubmit}
-      aria-label={`${label} ${query}`}
-      className="h-auto w-full justify-between gap-3 whitespace-normal rounded-none border-t border-border px-4 py-3 text-left"
-    >
-      <span className="min-w-0">
-        <span className="block text-xs text-muted-foreground">{label}</span>
-        <span className="block break-words font-semibold">{query}</span>
-      </span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-    </Button>
+    <section aria-label={meta.label} className="border-b border-border last:border-b-0">
+      <header className="flex items-baseline justify-between gap-3 px-4 pb-1 pt-3">
+        <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">{meta.label}</h3>
+        <span className="truncate text-[10px] text-muted-foreground/80">{meta.caption}</span>
+      </header>
+      {children}
+    </section>
   );
 }
 
-/** Skills → "Explore by": five ways in, then the items of the one chosen, then the matching professionals in Match. */
-function ExploreBy({ query, category, onCategoryChange, onKeyDown, onExplore, onSubmit }: Pick<HeroIntentPanelProps, "query" | "category" | "onCategoryChange" | "onKeyDown" | "onExplore" | "onSubmit">) {
-  const typed = query.trim();
-  if (typed) {
-    const matches = searchExploreBy(typed);
-    return (
-      <>
-        <p className={eyebrow}>Explore by</p>
-        {matches.length > 0 ? (
-          matches.map(({ category: c, item }) => {
-            const Icon = CATEGORY_ICON[c.id];
-            return (
-              <button key={`${c.id}-${item.label}`} type="button" data-search-result onKeyDown={onKeyDown} onClick={() => onExplore(item)} className={row}>
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 text-foreground/80 transition-colors group-hover:border-primary/40 group-hover:text-primary">
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-medium text-foreground">{item.label}</span>
-                  <span className="block truncate text-[11px] text-muted-foreground">{c.label} · {item.description}</span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-              </button>
-            );
-          })
-        ) : (
-          <p className="px-4 pb-3 text-sm text-muted-foreground">No area by that name. Search Match for the words you typed.</p>
-        )}
-        <SubmitRow label="Find professionals in Match" query={typed} onSubmit={onSubmit} onKeyDown={onKeyDown} />
-      </>
-    );
-  }
+function SeeAll({ label, onClick, onKeyDown }: { label: string; onClick: () => void; onKeyDown: HeroIntentPanelProps["onKeyDown"] }) {
+  return (
+    <button type="button" data-search-result onKeyDown={onKeyDown} onClick={onClick} className={cn(row, "py-2")}>
+      <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="min-w-0 flex-1 break-words text-xs font-medium text-primary">{label}</span>
+      <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+    </button>
+  );
+}
 
+function ResultRow({ result, onSelect, onKeyDown }: { result: IntentResult; onSelect: HeroIntentPanelProps["onSelectResult"]; onKeyDown: HeroIntentPanelProps["onKeyDown"] }) {
+  return (
+    <button type="button" data-search-result onKeyDown={onKeyDown} onClick={() => onSelect(result)} className={row}>
+      {result.type === "creator" ? (
+        <Avatar className="h-8 w-8 shrink-0">
+          <AvatarImage src={result.avatar || ""} />
+          <AvatarFallback className="bg-primary/10 text-xs text-primary">{(result.title || "?")[0]}</AvatarFallback>
+        </Avatar>
+      ) : (
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+          <Briefcase className="h-3.5 w-3.5 text-primary" aria-hidden />
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-foreground">{result.title}</span>
+        {result.subtitle ? <span className="block truncate text-[11px] text-muted-foreground">{result.subtitle}</span> : null}
+      </span>
+      <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+    </button>
+  );
+}
+
+/** Nothing typed yet: "Explore by", five ways into the professionals on Kretopia, each one opening its own list. */
+function ExploreBy({ category, onCategoryChange, onKeyDown, onExplore }: Pick<HeroIntentPanelProps, "category" | "onCategoryChange" | "onKeyDown" | "onExplore">) {
   const open = exploreByCategory(category);
   if (open) {
     return (
@@ -130,15 +126,17 @@ function ExploreBy({ query, category, onCategoryChange, onKeyDown, onExplore, on
       </>
     );
   }
-
   return (
     <>
-      <p className={eyebrow}>Explore by</p>
+      <header className="px-4 pb-1 pt-3">
+        <h3 className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Explore by</h3>
+        <p className="mt-0.5 text-xs text-muted-foreground">Pick an area to meet the professionals in it, or start typing.</p>
+      </header>
       {EXPLORE_BY.map((c) => {
         const Icon = CATEGORY_ICON[c.id];
         return (
           <button key={c.id} type="button" data-search-result onKeyDown={onKeyDown} onClick={() => onCategoryChange(c.id)} className={row}>
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 text-foreground/80 transition-colors group-hover:border-primary/40 group-hover:text-primary">
+            <span className={iconTile}>
               <Icon className="h-3.5 w-3.5" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
@@ -153,89 +151,71 @@ function ExploreBy({ query, category, onCategoryChange, onKeyDown, onExplore, on
   );
 }
 
-function ResultList({
-  heading,
-  icon: Icon,
-  results,
-  emptyText,
-  children,
-  onKeyDown,
-  onSelectResult,
-}: {
-  heading: string;
-  icon: LucideIcon;
-  results: IntentResult[];
-  emptyText: ReactNode;
-  children: ReactNode;
-  onKeyDown: HeroIntentPanelProps["onKeyDown"];
-  onSelectResult: HeroIntentPanelProps["onSelectResult"];
-}) {
-  return (
-    <>
-      <p className={eyebrow}>{heading}</p>
-      {results.length === 0 ? <p className="px-4 pb-3 text-sm text-muted-foreground">{emptyText}</p> : null}
-      {results.map((r) => (
-        <button key={`${r.type}-${r.id}`} type="button" data-search-result onKeyDown={onKeyDown} onClick={() => onSelectResult(r)} className={row}>
-          {r.avatar !== undefined && r.type === "creator" ? (
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarImage src={r.avatar || ""} />
-              <AvatarFallback className="bg-primary/10 text-xs text-primary">{(r.title || "?")[0]}</AvatarFallback>
-            </Avatar>
-          ) : (
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-              <Icon className="h-3.5 w-3.5 text-primary" aria-hidden />
-            </span>
-          )}
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-foreground">{r.title}</span>
-            {r.subtitle ? <span className="block truncate text-[11px] text-muted-foreground">{r.subtitle}</span> : null}
-          </span>
-          <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-        </button>
-      ))}
-      {children}
-    </>
-  );
-}
-
 /**
- * The hero search's results, by intent. People: real Passports (public-safe for guests) and a way into the whole directory.
- * Skills: "Explore by", then the matching professionals in Match. Opportunities: real open gigs and a way into Scout.
- * Semantic tokens only; the loader is the shared K mark.
+ * The hero search's answers. One field, no mode: with nothing typed it offers "Explore by"; once there are words it answers in
+ * up to three sections (People, Skills, Opportunities), each only if it has something, each saying which feature it belongs to.
+ * Real, public-safe records for a guest; semantic tokens only; the loader is the shared K mark.
  */
-export function HeroIntentPanel({ intent, query, results, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSubmit, onRetry }: HeroIntentPanelProps) {
+export function HeroIntentPanel({ query, people, opportunities, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSeeAll, onRetry }: HeroIntentPanelProps) {
   const typed = query.trim();
-  const meta = searchIntentMeta(intent);
+  if (!typed) return <ExploreBy category={category} onCategoryChange={onCategoryChange} onKeyDown={onKeyDown} onExplore={onExplore} />;
 
-  if (intent === "skills") {
-    return <ExploreBy query={query} category={category} onCategoryChange={onCategoryChange} onKeyDown={onKeyDown} onExplore={onExplore} onSubmit={onSubmit} />;
-  }
+  const skills = searchExploreBy(typed, 4);
+  const hasAny = people.length > 0 || skills.length > 0 || opportunities.length > 0;
 
-  const isPeople = intent === "people";
-  const found = results.filter((r) => (isPeople ? r.type === "creator" : r.type === "gig"));
   return (
     <>
-      {loading && found.length === 0 ? <KretopiaLoader size="sm" label="Searching Kretopia" className="px-4" /> : null}
-      {!loading && error ? (
+      {people.length > 0 ? (
+        <Section intent="people">
+          {people.map((p) => <ResultRow key={`creator-${p.id}`} result={p} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
+          <SeeAll label={`See everyone for “${typed}”`} onClick={() => onSeeAll("people")} onKeyDown={onKeyDown} />
+        </Section>
+      ) : null}
+
+      {skills.length > 0 ? (
+        <Section intent="skills">
+          {skills.map(({ category: c, item }) => {
+            const Icon = CATEGORY_ICON[c.id];
+            return (
+              <button key={`${c.id}-${item.label}`} type="button" data-search-result onKeyDown={onKeyDown} onClick={() => onExplore(item)} className={row}>
+                <span className={iconTile}><Icon className="h-3.5 w-3.5" aria-hidden /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium text-foreground">{item.label}</span>
+                  <span className="block truncate text-[11px] text-muted-foreground">{c.label} · {item.description}</span>
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+              </button>
+            );
+          })}
+          <SeeAll label={`Find professionals for “${typed}”`} onClick={() => onSeeAll("skills")} onKeyDown={onKeyDown} />
+        </Section>
+      ) : null}
+
+      {opportunities.length > 0 ? (
+        <Section intent="opportunities">
+          {opportunities.map((o) => <ResultRow key={`gig-${o.id}`} result={o} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
+          <SeeAll label={`Search Scout for “${typed}”`} onClick={() => onSeeAll("opportunities")} onKeyDown={onKeyDown} />
+        </Section>
+      ) : null}
+
+      {loading && !hasAny ? <KretopiaLoader size="sm" label="Searching Kretopia" className="px-4" /> : null}
+
+      {!loading && error && !hasAny ? (
         <div className="px-4 py-4 text-center">
-          <p className="text-sm text-destructive">Search failed</p>
+          <p className="text-sm text-destructive">The search could not finish</p>
           <p className="mt-0.5 text-xs text-muted-foreground">Check your connection and try again.</p>
-          <button type="button" onClick={onRetry} className="mt-2 text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">
+          <button type="button" onClick={onRetry} className="mt-2 rounded text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             Try again
           </button>
         </div>
       ) : null}
-      {!error && (!loading || found.length > 0) ? (
-        <ResultList
-          heading={isPeople ? "People" : "Opportunities"}
-          icon={isPeople ? User : Briefcase}
-          results={found}
-          emptyText={isPeople ? "No one by that name yet. Search the Passport directory for the words you typed." : "No open opportunity by that name. Search Scout for the words you typed."}
-          onKeyDown={onKeyDown}
-          onSelectResult={onSelectResult}
-        >
-          <SubmitRow label={isPeople ? `Search ${meta.destination} for people` : `Search ${meta.destination}`} query={typed} onSubmit={onSubmit} onKeyDown={onKeyDown} />
-        </ResultList>
+
+      {!loading && !error && !hasAny ? (
+        <div>
+          <p className="px-4 pb-1 pt-3 text-sm text-muted-foreground">Nothing matches “{typed}” yet. Search the whole of Kretopia instead:</p>
+          <SeeAll label={`Search people and skills for “${typed}”`} onClick={() => onSeeAll("people")} onKeyDown={onKeyDown} />
+          <SeeAll label={`Search opportunities for “${typed}”`} onClick={() => onSeeAll("opportunities")} onKeyDown={onKeyDown} />
+        </div>
       ) : null}
     </>
   );

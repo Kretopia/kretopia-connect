@@ -107,11 +107,10 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
       toast.success('Kretopia interest sent', {
         description: 'Pending for now — if they connect too, your new connection will appear in Connected.',
         icon: <img src="/brand/kretopia-identity/mark/kretopia-mark-transparent.webp" alt="" className="h-5 w-5" />,
-        action: { label: 'View sent', onClick: () => navigate('/match?tab=connected&view=sent') },
         duration: 4500,
       });
     }
-  }, [recordSwipe, removeProfile, onMatch, navigate]);
+  }, [recordSwipe, removeProfile, onMatch]);
 
   const handlePass = useCallback(async (profile: SwipeProfile) => {
     if (savingRef.current) return;

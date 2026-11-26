@@ -1,33 +1,44 @@
-import { describe, expect, it } from "vitest";
-
 import {
-  DEFAULT_SEARCH_INTENT,
   EXPLORE_BY,
+  HERO_SEARCH_PLACEHOLDER,
   SEARCH_INTENTS,
   exploreByCategory,
   exploreByTarget,
+  searchEnterTarget,
   searchExploreBy,
   searchIntentTarget,
 } from "../searchIntent";
 
-describe("search intents", () => {
-  it("are People → Passport, Skills → Match, Opportunities → Scout, in that order", () => {
+describe("search sections", () => {
+  it("are People → Passport, Skills → Match, Opportunities → Scout, in that order, each with a caption", () => {
     expect(SEARCH_INTENTS.map((i) => [i.label, i.destination])).toEqual([
       ["People", "Passport"],
       ["Skills", "Match"],
       ["Opportunities", "Scout"],
     ]);
-    expect(DEFAULT_SEARCH_INTENT).toBe("people");
+    for (const section of SEARCH_INTENTS) expect(section.caption.trim()).not.toBe("");
   });
 
-  it("each lands in its own feature with the words carried as ?q=", () => {
-    expect(searchIntentTarget("people", "Ada Lovelace")).toBe("/match?tab=directory&q=Ada%20Lovelace");
-    expect(searchIntentTarget("skills", "Motion Design")).toBe("/match?tab=directory&q=Motion%20Design");
+  it("the field says what it finds before anything is typed", () => {
+    expect(HERO_SEARCH_PLACEHOLDER).toBe("Search a name, a skill or an opportunity");
+  });
+
+  it("People and Skills land on Match's Grid, Opportunities on Scout, with the words carried as ?q=", () => {
+    expect(searchIntentTarget("people", "Ada Lovelace")).toBe("/match?tab=browse&view=grid&q=Ada%20Lovelace");
+    expect(searchIntentTarget("skills", "Motion Design")).toBe("/match?tab=browse&view=grid&q=Motion%20Design");
     expect(searchIntentTarget("opportunities", "film editor")).toBe("/scout?q=film%20editor");
   });
 
   it("trims the words and encodes what could break a URL", () => {
     expect(searchIntentTarget("opportunities", "  R&D #1  ")).toBe("/scout?q=R%26D%20%231");
+  });
+
+  it("Enter goes to the Grid, except when the only answer is an open opportunity", () => {
+    expect(searchEnterTarget("ada", { people: 3, skills: 0, opportunities: 0 })).toBe("/match?tab=browse&view=grid&q=ada");
+    expect(searchEnterTarget("motion", { people: 0, skills: 2, opportunities: 1 })).toBe("/match?tab=browse&view=grid&q=motion");
+    expect(searchEnterTarget("editor", { people: 1, skills: 0, opportunities: 2 })).toBe("/match?tab=browse&view=grid&q=editor");
+    expect(searchEnterTarget("hiring", { people: 0, skills: 0, opportunities: 2 })).toBe("/scout?q=hiring");
+    expect(searchEnterTarget("zzz", { people: 0, skills: 0, opportunities: 0 })).toBe("/match?tab=browse&view=grid&q=zzz");
   });
 });
 
@@ -54,10 +65,10 @@ describe("Skills → Explore by", () => {
     }
   });
 
-  it("walks Skills → Creative Disciplines → Motion Design → the matching professionals in Match", () => {
+  it("walks Skills → Creative Disciplines → Motion Design → the Grid in Match, with the term in its search bar", () => {
     const motion = exploreByCategory("disciplines")?.items.find((i) => i.label === "Motion Design");
     expect(motion).toBeDefined();
-    expect(exploreByTarget(motion!)).toBe("/match?tab=directory&q=Motion");
+    expect(exploreByTarget(motion!)).toBe("/match?tab=browse&view=grid&q=Motion");
   });
 
   it("finds an item from the first letters, best match first, across categories", () => {

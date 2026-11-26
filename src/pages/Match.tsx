@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { SEO } from "@/components/SEO";
-import { LayoutGrid, UserCheck, IdCard, Heart, Send } from "lucide-react";
+import { LayoutGrid, UserCheck } from "lucide-react";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { MatchDeck } from "@/components/swipe";
 import { MatchPulse } from "@/components/swipe/MatchPulse";
@@ -11,17 +11,11 @@ import { MATCH_TUTORIAL } from "@/components/landing/kretopia/tutorialContent";
 import { FeatureSectionNav } from "@/components/features/FeatureSectionNav";
 import {
   BROWSE_VIEW_IDS,
-  CONNECTED_VIEW_IDS,
   matchTabFromParams,
   type BrowseViewId,
-  type ConnectedViewId,
   type MatchTabId,
 } from "@/lib/matchSections";
 import type { StudioSectionTab } from "@/components/studio-reference/StudioSectionTabs";
-
-const LikesYouGrid = lazy(() =>
-  import("@/components/swipe/LikesYouGrid").then((m) => ({ default: m.LikesYouGrid }))
-);
 
 const ConnectedCollaborators = lazy(() =>
   import("@/components/circle/ConnectedCollaborators").then((m) => ({ default: m.ConnectedCollaborators }))
@@ -30,8 +24,6 @@ const ConnectedCollaborators = lazy(() =>
 const BrowseCreators = lazy(() =>
   import("@/components/discover/BrowseCreators").then((m) => ({ default: m.BrowseCreators }))
 );
-
-const PassportDirectory = lazy(() => import("@/pages/PassportDirectory"));
 
 const loadingRow = (label: string) => (
   <div className="flex items-center gap-2 text-xs text-muted-foreground py-10 justify-center">
@@ -61,14 +53,14 @@ export default function Match() {
     setActive({ tab, view });
     const next = new URLSearchParams(searchParams);
     next.set("tab", tab);
-    // Directory has no second view: keep its URL exactly as before the merge (no "view" key at all).
+    // A search term arrived with a link (the hero's Skills search) and belongs to the Grid it filled: moving between sections ends it.
+    next.delete("q");
     if (view) next.set("view", view);
     else next.delete("view");
     setSearchParams(next, { replace: true });
   };
 
   const browseView = activeTab === "browse" ? (activeView as BrowseViewId) : BROWSE_VIEW_IDS.deck;
-  const connectedView = activeTab === "connected" ? (activeView as ConnectedViewId) : CONNECTED_VIEW_IDS.connected;
 
   // The handoff from onboarding (/circle?welcome=match used to open the deck with this toast).
   useEffect(() => {
@@ -99,34 +91,14 @@ export default function Match() {
       ),
     },
     {
-      id: "directory",
-      label: "Directory",
-      icon: IdCard,
-      content: (
-        <Suspense fallback={loadingRow("Loading Passports…")}>
-          <PassportDirectory embedded />
-        </Suspense>
-      ),
-    },
-    {
       id: "connected",
       label: "Connected",
       icon: UserCheck,
       content: (
         <div className="w-full min-w-0 space-y-4">
-          {connectedView === CONNECTED_VIEW_IDS.connected ? (
-            <Suspense fallback={loadingRow("Loading…")}>
-              <ConnectedCollaborators />
-            </Suspense>
-          ) : (
-            // LikesYouGrid queries the swipes table for people who swiped right on you and you haven't
-            // responded to yet -- genuinely different from the accepted-connections list above it (the
-            // `connections` table). Labeled for what this view actually shows rather than a dating-app
-            // "Likes you".
-            <Suspense fallback={loadingRow("Loading…")}>
-              <LikesYouGrid key={connectedView} direction={connectedView === CONNECTED_VIEW_IDS.sent ? "sent" : "received"} />
-            </Suspense>
-          )}
+          <Suspense fallback={loadingRow("Loading…")}>
+            <ConnectedCollaborators />
+          </Suspense>
         </div>
       ),
     },
@@ -152,10 +124,7 @@ export default function Match() {
           items={[
             { id: "browse:deck", label: "Browse", icon: LayoutGrid },
             { id: "browse:grid", label: "Grid", icon: LayoutGrid },
-            { id: "directory:", label: "Directory", icon: IdCard },
             { id: "connected:connected", label: "Connected", icon: UserCheck },
-            { id: "connected:interested", label: "Interested", icon: Heart },
-            { id: "connected:sent", label: "Sent interests", icon: Send },
           ]}
           value={`${activeTab}:${activeView}`}
           label="Match sections"

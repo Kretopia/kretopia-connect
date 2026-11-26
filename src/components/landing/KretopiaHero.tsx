@@ -56,6 +56,7 @@ import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
+import { HERO_SEARCH_PLACEHOLDER } from "@/lib/searchIntent";
 import { GlassCta, OutlineCta } from "@/components/ui/glass-cta";
 import { SCOUT_PATH } from "@/lib/opportunityRoutes";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
@@ -473,7 +474,7 @@ export const KretopiaHero = () => {
           >
             Find work on Kretopia
           </p>
-          <UnifiedSearchDropdown variant="hero" intentSearch placeholder="People, projects, opportunities…" />
+          <UnifiedSearchDropdown variant="hero" intentSearch placeholder={HERO_SEARCH_PLACEHOLDER} />
         </motion.div>
 
         {/* Neutral secondary action follows the active theme; the title
