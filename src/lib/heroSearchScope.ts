@@ -108,5 +108,7 @@ export const scopeSources = (scope: SearchScope) => ({
   skills: scope === "all" || scope === "match",
   opportunities: scope === "all" || scope === "scout",
   events: scope === "all" || scope === "events",
+  /** Public work records (project credits): only under All, where a name can be a person, an opportunity or a project. */
+  work: scope === "all",
   stages: scope === "soundstages",
 });

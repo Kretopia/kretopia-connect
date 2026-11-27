@@ -81,8 +81,8 @@ describe("where a scoped search lands", () => {
 
 describe("which sources a scope asks while someone types", () => {
   it("All asks everything that can be answered at once; a chosen scope asks only its own", () => {
-    expect(scopeSources("all")).toEqual({ people: true, skills: true, opportunities: true, events: true, stages: false });
-    expect(scopeSources("people")).toEqual({ people: true, skills: false, opportunities: false, events: false, stages: false });
+    expect(scopeSources("all")).toEqual({ people: true, skills: true, opportunities: true, events: true, work: true, stages: false });
+    expect(scopeSources("people")).toEqual({ people: true, skills: false, opportunities: false, events: false, work: false, stages: false });
     expect(scopeSources("scout")).toMatchObject({ opportunities: true, people: false, events: false });
     expect(scopeSources("match")).toMatchObject({ skills: true, people: false });
     expect(scopeSources("events")).toMatchObject({ events: true, people: false, opportunities: false });

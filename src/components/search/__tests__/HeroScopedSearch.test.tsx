@@ -130,7 +130,7 @@ describe("hero search with a scope (signed in)", () => {
     type("photographer");
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
     expect(where()).toBe("/scout?q=photographer");
-    expect(analytics.featureUsed).toHaveBeenCalledWith("landing_hero_search", { scope: "scout" });
+    expect(analytics.featureUsed).toHaveBeenCalledWith("landing_hero_search", expect.objectContaining({ scope: "scout" }));
   });
 
   it("under All, Enter opens the area that has the only answer", async () => {
@@ -226,70 +226,148 @@ describe("hero search topic labels", () => {
   });
 });
 
-describe("hero search for a guest", () => {
+const person = (id: string, name: string, extra: Record<string, unknown> = {}) => ({ user_id: id, full_name: name, role: "Photographer", location: "Bali", bio: "Editorial and fashion photographer based in Bali, shooting for studios.", avatar_url: `https://img.test/${id}.jpg`, ...extra });
+const opportunity = (extra: Record<string, unknown> = {}) => ({ id: "g1", title: "Hotel Campaign Bali", type: "Paid Job", compensation: "$800", location: "Bali", image_url: "https://img.test/g1.jpg", application_deadline: "2999-01-01T00:00:00Z", created_at: "2026-09-01T00:00:00Z", skills: ["Photography"], ...extra });
+
+describe("hero search for a visitor (public discovery, no account needed)", () => {
   beforeEach(() => {
     mocks.auth.user = null;
   });
 
-  it("sees that results exist, each marked as needing an account, with one quiet sign-up prompt", async () => {
-    mocks.people.mockResolvedValue({ users: [ada], hasMore: false });
-    render(<TopicsHarness initial="people" />);
-    type("ada");
+  it("shows results with a miniature, the evidence, why each appears and a specific next action", async () => {
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ada Lovelace")], hasMore: false });
+    mocks.tables.mockImplementation((table: string) => ({ data: table === "opportunities" ? [opportunity()] : [], error: null }));
+    render(<TopicsHarness />);
+    type("photograph");
     await waitFor(() => expect(results()).toHaveTextContent("Ada Lovelace"));
-    expect(screen.getAllByLabelText("Needs an account").length).toBeGreaterThan(0);
-    const gate = results().querySelector("[data-search-gate]") as HTMLElement;
-    expect(gate).toHaveTextContent("Sign up free to view full results.");
-    expect(gate.querySelectorAll("button")).toHaveLength(2);
+    await waitFor(() => expect(results()).toHaveTextContent("Hotel Campaign Bali"));
+    // What is this, why is it relevant, what can I do next.
+    const personRow = results().querySelector('[data-result-kind="person"]') as HTMLElement;
+    expect(personRow).toHaveTextContent("Photographer · Bali");
+    expect(personRow).toHaveTextContent("Role: Photographer");
+    expect(personRow).toHaveTextContent("Editorial and fashion photographer");
+    expect(personRow).toHaveTextContent("View profile");
+    const oppRow = results().querySelector('[data-result-kind="opportunity"]') as HTMLElement;
+    expect(oppRow).toHaveTextContent("Paid Job · $800 · Bali");
+    expect(oppRow).toHaveTextContent("Skill: Photography");
+    expect(oppRow).toHaveTextContent("Apply by");
+    expect(oppRow).toHaveTextContent("View opportunity");
+    // The miniature of an opportunity is its public image.
+    expect(oppRow.querySelector("img")).toHaveAttribute("src", "https://img.test/g1.jpg");
+    // Neutral words, and nothing asks for an account.
+    expect(results()).toHaveTextContent("Results for “photograph”");
+    expect(results().querySelector("[data-search-gate]")).toBeNull();
+    expect(screen.queryByLabelText("Needs an account")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Sign up" })).toBeNull();
   });
 
-  it("opens nothing: a result, Enter and the Search button keep the guest on the page and bring up the prompt", async () => {
-    mocks.people.mockResolvedValue({ users: [ada], hasMore: false });
+  it("opens a public profile or opportunity straight from a result", async () => {
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ada Lovelace")], hasMore: false });
     render(<TopicsHarness initial="people" />);
-    type("ada");
+    type("lovelace");
     fireEvent.click(await screen.findByRole("button", { name: /Ada Lovelace/ }));
-    expect(where()).toBe("/");
+    expect(where()).toBe("/profile/p1");
+  });
+
+  it("an exact, unique name goes straight to that public profile", async () => {
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ethan Auguste")], hasMore: false });
+    render(<TopicsHarness />);
+    type("Ethan Auguste");
+    await waitFor(() => expect(results()).toHaveTextContent("Ethan Auguste"));
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(where()).toBe("/");
-    fireEvent.click(screen.getByRole("button", { name: /See everyone for/ }));
-    expect(where()).toBe("/");
-    expect(results().querySelector("[data-search-gate]")).not.toBeNull();
+    expect(where()).toBe("/profile/p1");
   });
 
-  it("shows no prompt while nothing was found, and does not claim content that is not there", async () => {
-    render(<TopicsHarness initial="scout" />);
-    type("zzzz");
-    await waitFor(() => expect(results()).toHaveTextContent("Nothing matches"));
-    expect(results().querySelector("[data-search-gate]")).toBeNull();
-  });
-
-  it("Sign up keeps the topic and the words for the app's own post-auth return", async () => {
-    mocks.tables.mockResolvedValue({ data: [gig], error: null });
-    render(<TopicsHarness initial="scout" />);
-    type("film");
-    await waitFor(() => expect(results()).toHaveTextContent("Film editor"));
-    fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
-    expect(where()).toBe("/auth?tab=signup");
-    expect(sessionStorage.getItem("thrivein_post_auth_redirect")).toBe("/scout?q=film");
-  });
-
-  it("Sign in keeps them the same way, and People and Match return to the Grid with the words", async () => {
-    mocks.people.mockResolvedValue({ users: [ada], hasMore: false });
+  it("two people with the same name are not redirected: the visitor tells them apart in the results", async () => {
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ethan Auguste"), person("p2", "Ethan Auguste", { role: "Director", location: "Lisbon" })], hasMore: false });
     render(<TopicsHarness initial="people" />);
-    type("ada");
-    await waitFor(() => expect(results()).toHaveTextContent("Ada Lovelace"));
-    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
-    expect(where()).toBe("/auth?tab=signin");
-    expect(sessionStorage.getItem("thrivein_post_auth_redirect")).toBe("/match?tab=browse&view=grid&q=ada");
+    type("Ethan Auguste");
+    await waitFor(() => expect(results().querySelectorAll('[data-result-kind="person"]')).toHaveLength(2));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(where()).toBe("/match?tab=browse&view=grid&q=Ethan%20Auguste");
   });
 
-  it("a member is never asked: the same search opens its page", async () => {
-    mocks.auth.user = { id: "u1" };
-    mocks.tables.mockResolvedValue({ data: [gig], error: null });
+  it("an exact, unique opportunity title goes straight to its public page", async () => {
+    mocks.tables.mockImplementation((table: string) => ({ data: table === "opportunities" ? [opportunity()] : [], error: null }));
+    render(<TopicsHarness />);
+    type("Hotel Campaign Bali");
+    await waitFor(() => expect(results()).toHaveTextContent("Hotel Campaign Bali"));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(where()).toBe("/opportunity/g1");
+  });
+
+  it("a generic query is never redirected to a single object", async () => {
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ada Lovelace")], hasMore: false });
+    mocks.tables.mockImplementation((table: string) => ({ data: table === "opportunities" ? [opportunity()] : [], error: null }));
+    render(<TopicsHarness />);
+    type("photographer");
+    await waitFor(() => expect(results()).toHaveTextContent("Hotel Campaign Bali"));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(where()).not.toMatch(/^\/profile\/|^\/opportunity\//);
+  });
+
+  it("says honestly when a deadline has passed", async () => {
+    mocks.tables.mockImplementation((table: string) => ({ data: table === "opportunities" ? [opportunity({ application_deadline: "2020-01-01T00:00:00Z" })] : [], error: null }));
+    render(<TopicsHarness initial="scout" />);
+    type("hotel");
+    await waitFor(() => expect(results()).toHaveTextContent("Deadline passed"));
+  });
+
+  it("keeps working when the optional columns are missing: the basics still answer", async () => {
+    mocks.tables.mockImplementation((table: string, ) => ({ data: table === "opportunities" ? [{ id: "g9", title: "Film editor", type: "Paid Job" }] : [], error: null }));
     render(<TopicsHarness initial="scout" />);
     type("film");
     await waitFor(() => expect(results()).toHaveTextContent("Film editor"));
-    expect(results().querySelector("[data-search-gate]")).toBeNull();
+  });
+
+  it("lists public work (one row per project) under All, with the credits it carries", async () => {
+    mocks.tables.mockImplementation((table: string) => ({
+      data: table === "credits"
+        ? [{ id: "c1", project_name: "Hotel Campaign Bali", role: "DOP", year: 2025, project_type: "Commercial", thumbnail_url: "https://img.test/c1.jpg" }, { id: "c2", project_name: "hotel campaign bali", role: "Editor", year: 2025, project_type: "Commercial", thumbnail_url: null }]
+        : [],
+      error: null,
+    }));
+    render(<TopicsHarness />);
+    type("hotel");
+    await waitFor(() => expect(results().querySelectorAll('[data-result-kind="work"]')).toHaveLength(1));
+    const row = results().querySelector('[data-result-kind="work"]') as HTMLElement;
+    expect(row).toHaveTextContent("Commercial · 2025");
+    expect(row).toHaveTextContent("2 credits on Kretopia");
+    expect(row).toHaveTextContent("View work");
+    fireEvent.click(row);
+    expect(where()).toBe("/production?name=Hotel%20Campaign%20Bali");
+  });
+
+  it("an empty search is truthful and offers adjacent next steps, not a fabricated match", async () => {
+    render(<TopicsHarness initial="scout" />);
+    type("Editorial Motion Designer Penang");
+    await screen.findByText(/We couldn’t find an exact match for “Editorial Motion Designer Penang”/);
+    expect(screen.getByRole("button", { name: /Explore people for/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Try a broader role or skill/ })).toBeInTheDocument();
+    // Its own topic is not offered back to it as "related".
+    expect(screen.queryByRole("button", { name: /See related opportunities/ })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: /Try a broader role or skill/ }));
+    expect(screen.getByRole("combobox")).toHaveValue("");
+  });
+
+  it("measures the kind of search and where it went, never the words", async () => {
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ethan Auguste")], hasMore: false });
+    render(<TopicsHarness />);
+    type("Ethan Auguste");
+    await waitFor(() => expect(results()).toHaveTextContent("Ethan Auguste"));
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(where()).toBe("/scout?q=film");
+    const calls = vi.mocked(analytics.featureUsed).mock.calls;
+    expect(calls).toContainEqual(["landing_hero_search", { scope: "all", class: "exact_person", route: "direct" }]);
+    expect(JSON.stringify(calls)).not.toContain("Ethan");
+  });
+
+  it("a member gets the same results and the same routes", async () => {
+    mocks.auth.user = { id: "u1" };
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ethan Auguste")], hasMore: false });
+    render(<TopicsHarness />);
+    type("Ethan Auguste");
+    await waitFor(() => expect(results()).toHaveTextContent("Ethan Auguste"));
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(where()).toBe("/profile/p1");
   });
 });

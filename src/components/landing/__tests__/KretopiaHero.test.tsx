@@ -148,14 +148,14 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(container.querySelector("[data-hero-dock]")).toBeNull();
   });
 
-  it("choosing a topic selects it; for a guest, Search keeps them here with the sign-up prompt and does not leave", () => {
+  it("choosing a topic selects it, and a visitor's Search opens that topic's own page: no sign-up in the way", () => {
     renderHero();
     fireEvent.click(document.querySelector('[data-scope-pill="scout"]') as HTMLElement);
     expect(document.querySelector('[data-scope-pill="scout"]')).toHaveAttribute("aria-checked", "true");
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "photographer" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(screen.getByTestId("where").textContent).toBe("/");
-    expect(screen.getByText("Sign up free to view full results.")).toBeInTheDocument();
+    expect(screen.getByTestId("where").textContent).toBe("/scout?q=photographer");
+    expect(screen.queryByText(/Sign up free to view full results/)).toBeNull();
   });
 
   it("keeps the microphone, the clear button and the submit button; clear empties the field", () => {

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 
 import Navbar from "@/components/Navbar";
@@ -50,7 +50,7 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
       ["Platform", "/landing"],
       ["For Creatives", "/passport"],
       ["For Companies", "/post-opportunity"],
-      ["Discover", "/discover"],
+      ["Discover", "/scout"],
     ]);
     expect(rubrics.querySelector("svg")).toBeNull();
   });
@@ -92,10 +92,20 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     expect(screen.queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   });
 
-  it("keeps search and the theme toggle in the bar", () => {
+  it("keeps the theme toggle in the bar, with no magnifying glass for a visitor", () => {
     renderBar();
-    expect(screen.getByRole("button", { name: "Search" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Search" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "theme" })).toBeInTheDocument();
+  });
+
+  it("Discover opens Scout for a visitor, as it does for a member", () => {
+    renderBar();
+    const rubrics = document.querySelector(".k-site-nav") as HTMLElement;
+    expect(within(rubrics).getByRole("link", { name: "Discover" })).toHaveAttribute("href", "/scout");
+    cleanup();
+    renderBar("/desk", { id: "u1" });
+    const member = document.querySelector(".k-site-nav") as HTMLElement;
+    expect(within(member).getByRole("link", { name: "Scout" })).toHaveAttribute("href", "/scout");
   });
 
   it("centres the rubrics on the screen: the middle cell sits between two equal columns", () => {
@@ -115,15 +125,14 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
       expect(rubrics.className).toContain("lg:col-start-2");
     });
 
-    it("puts the lockup and Sign in / Join on row 1, and search and the theme at the end of row 2", () => {
+    it("puts the lockup and Sign in / Join on row 1, and the theme at the end of row 2", () => {
       renderBar();
       const signIn = screen.getByRole("link", { name: "Sign in" }).parentElement as HTMLElement;
       expect(signIn.className).toContain("row-start-1");
       expect(signIn.className).toContain("col-span-2");
-      const tools = screen.getByRole("button", { name: "Search" }).parentElement as HTMLElement;
+      const tools = screen.getByRole("button", { name: "theme" }).parentElement as HTMLElement;
       expect(tools.className).toContain("row-start-2");
       expect(tools.className).toContain("col-start-2");
-      expect(tools).toContainElement(screen.getByRole("button", { name: "theme" }));
     });
 
     it("keeps the second column a fixed icon width, so the actions cannot squeeze the rubrics", () => {
@@ -133,8 +142,8 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
       expect(grid.className).toContain("sm:grid-cols-[minmax(0,1fr)_5.5rem]");
     });
 
-    it("opens the search in the middle of the screen, not under whichever bar is showing", () => {
-      renderBar();
+    it("opens a member's search in the middle of the screen, not under whichever bar is showing", () => {
+      renderBar("/desk", { id: "u1" });
       fireEvent.click(screen.getByRole("button", { name: "Search" }));
       const dialog = screen.getByRole("dialog");
       expect(dialog.className).not.toMatch(/top-\[calc\(/);
@@ -165,9 +174,9 @@ describe("the signed-out top bar (the designer's KretopiaHero header)", () => {
     });
   });
 
-  describe("the search", () => {
+  describe("a member's search", () => {
     const openSearch = () => {
-      renderBar();
+      renderBar("/desk", { id: "u1" });
       fireEvent.click(screen.getByRole("button", { name: "Search" }));
       return screen.getByRole("dialog");
     };
