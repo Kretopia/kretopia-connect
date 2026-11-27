@@ -1,5 +1,5 @@
-import type { KeyboardEvent, ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Briefcase, Building2, CalendarDays, ChevronRight, Clapperboard, Music, Palette, Radio, Search, Wand2, type LucideIcon } from "lucide-react";
+import { createContext, useContext, type KeyboardEvent, type ReactNode } from "react";
+import { ArrowLeft, ArrowRight, Briefcase, Building2, CalendarDays, ChevronRight, Clapperboard, Lock, Music, Palette, Radio, Search, Wand2, type LucideIcon } from "lucide-react";
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,6 +22,18 @@ export interface IntentResult {
   title: string;
   subtitle?: string;
   avatar?: string | null;
+}
+
+/** For a guest, rows say "this needs an account" with a lock where the arrow would be. */
+const LockedContext = createContext(false);
+
+function Go({ className }: { className?: string }) {
+  const locked = useContext(LockedContext);
+  return locked ? (
+    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Needs an account" />
+  ) : (
+    <ArrowRight className={cn("h-4 w-4 shrink-0 text-primary", className)} aria-hidden />
+  );
 }
 
 const CATEGORY_ICON: Record<ExploreByCategoryId, LucideIcon> = {
@@ -56,6 +68,8 @@ interface HeroIntentPanelProps {
   events?: IntentResult[];
   /** Open the full search behind a scope (its own page, with the words in its search bar). */
   onSeeAllScope?: (scope: SearchScope) => void;
+  /** A guest: results are shown but none opens without an account, so rows carry a lock instead of an arrow. */
+  locked?: boolean;
 }
 
 const row =
@@ -109,7 +123,7 @@ function SeeAll({ label, onClick, onKeyDown }: { label: string; onClick: () => v
     <button type="button" data-search-result onKeyDown={onKeyDown} onClick={onClick} className={cn(row, "py-2")}>
       <Search className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
       <span className="min-w-0 flex-1 break-words text-xs font-medium text-primary">{label}</span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+      <Go />
     </button>
   );
 }
@@ -131,7 +145,7 @@ function ResultRow({ result, onSelect, onKeyDown }: { result: IntentResult; onSe
         <span className="block truncate text-sm font-medium text-foreground">{result.title}</span>
         {result.subtitle ? <span className="block truncate text-[11px] text-muted-foreground">{result.subtitle}</span> : null}
       </span>
-      <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+      <Go />
     </button>
   );
 }
@@ -156,7 +170,7 @@ function ExploreBy({ category, onCategoryChange, onKeyDown, onExplore }: Pick<He
                 <span className="block truncate text-sm font-medium text-foreground">{item.label}</span>
                 <span className="block truncate text-[11px] text-muted-foreground">{item.description}</span>
               </span>
-              <ArrowRight className="h-4 w-4 shrink-0 text-primary opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" aria-hidden />
+              <Go className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
             </button>
           ))}
         </div>
@@ -193,7 +207,7 @@ function ExploreBy({ category, onCategoryChange, onKeyDown, onExplore }: Pick<He
  * up to three sections (People, Skills, Opportunities), each only if it has something, each saying which feature it belongs to.
  * Real, public-safe records for a guest; semantic tokens only; the loader is the shared K mark.
  */
-export function HeroIntentPanel({ query, people, opportunities, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSeeAll, onRetry, scope, events = [], onSeeAllScope }: HeroIntentPanelProps) {
+function HeroIntentPanelBody({ query, people, opportunities, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSeeAll, onRetry, scope, events = [], onSeeAllScope }: HeroIntentPanelProps) {
   const typed = query.trim();
   const sources = scope ? scopeSources(scope) : { people: true, skills: true, opportunities: true, events: false, stages: false };
   // The vocabulary ("Explore by") is for All and Match; the other scopes have none to browse.
@@ -227,7 +241,7 @@ export function HeroIntentPanel({ query, people, opportunities, loading, error, 
                   <span className="block truncate text-sm font-medium text-foreground">{item.label}</span>
                   <span className="block truncate text-[11px] text-muted-foreground">{c.label} · {item.description}</span>
                 </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <Go />
               </button>
             );
           })}
@@ -289,6 +303,14 @@ export function HeroIntentPanel({ query, people, opportunities, loading, error, 
         </div>
       ) : null}
     </>
+  );
+}
+
+export function HeroIntentPanel(props: HeroIntentPanelProps) {
+  return (
+    <LockedContext.Provider value={!!props.locked}>
+      <HeroIntentPanelBody {...props} />
+    </LockedContext.Provider>
   );
 }
 

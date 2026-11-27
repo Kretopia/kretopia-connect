@@ -32,14 +32,20 @@ export const DEFAULT_SEARCH_SCOPE: SearchScope = "all";
 export const SEARCH_SCOPES: readonly SearchScopeMeta[] = [
   { id: "all", label: "All", description: "Everything on Kretopia", placeholder: "Search people, skills, opportunities and events", placeholderCompact: "Search Kretopia" },
   { id: "people", label: "People", description: "Members and creative profiles", placeholder: "Search people, members and creative profiles", placeholderCompact: "Search people" },
-  { id: "scout", label: "Scout", description: "Scouting and discovery", placeholder: "Search opportunities to scout and discover", placeholderCompact: "Search opportunities" },
+  { id: "scout", label: "Scouts", description: "Scouting and discovery", placeholder: "Search opportunities to scout and discover", placeholderCompact: "Search opportunities" },
   { id: "match", label: "Match", description: "Relevant matches and connections", placeholder: "Search a craft, skill or discipline to match with", placeholderCompact: "Search a craft or skill" },
   { id: "events", label: "Events", description: "Events and related activities", placeholder: "Search events by title, venue or topic", placeholderCompact: "Search events" },
   { id: "soundstages", label: "SoundStages", description: "Live creative rooms", placeholder: "Search SoundStages and live sessions", placeholderCompact: "Search SoundStages" },
 ];
 
-/** The short line under the field. */
-export const HERO_SEARCH_GUIDANCE = "Search all of Kretopia, or narrow it to one area.";
+/**
+ * The topics the landing hero shows as compact labels on its search bar, in order. Only scopes whose destination exists and whose
+ * words that destination reads from ?q= are offered; Events and SoundStages exist as scopes for other hosts but are not promoted here.
+ */
+export const HERO_TOPICS: readonly SearchScope[] = ["all", "scout", "people", "match"];
+
+/** What the hero's field says, whatever the topic: the topic labels carry the context. */
+export const HERO_TOPIC_PLACEHOLDER = "Search creatives, skills or opportunities…";
 
 export const searchScopeMeta = (scope: SearchScope): SearchScopeMeta =>
   SEARCH_SCOPES.find((s) => s.id === scope) ?? SEARCH_SCOPES[0];
