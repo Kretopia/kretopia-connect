@@ -136,7 +136,7 @@ describe("KretopiaHero — Kreto Universe", () => {
     const { container } = renderHero();
     const group = screen.getByRole("radiogroup", { name: "Search topic" });
     const radios = Array.from(group.querySelectorAll('[role="radio"]'));
-    expect(radios.map((r) => r.textContent)).toEqual(["All", "Scouts", "People", "Match"]);
+    expect(radios.map((r) => r.textContent)).toEqual(["All", "Scout", "People", "Match"]);
     expect(radios[0]).toHaveAttribute("aria-checked", "true");
     expect(radios.slice(1).every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
     // The labels belong to the search bar: same wrapper as the field.
@@ -168,7 +168,7 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(field).toHaveValue("");
   });
 
-  it("tints the sky when the search is narrowed to Scouts, People or Match, and clears it for All", () => {
+  it("tints the sky when the search is narrowed to Scout, People or Match, and clears it for All", () => {
     const { container } = renderHero();
     const sky = container.querySelector("[data-universe]") as HTMLElement;
     expect(sky).not.toHaveAttribute("data-tint");

@@ -185,11 +185,11 @@ const TopicsHarness = ({ initial = "all" as SearchScope }) => {
 const pill = (id: string) => document.querySelector(`[data-scope-pill="${id}"]`) as HTMLElement;
 
 describe("hero search topic labels", () => {
-  it("shows All, Scouts, People and Match as compact radios on the bar, All selected", () => {
+  it("shows All, Scout, People and Match as compact radios on the bar, All selected", () => {
     render(<TopicsHarness />);
     const group = screen.getByRole("radiogroup", { name: "Search topic" });
     const radios = Array.from(group.querySelectorAll('[role="radio"]'));
-    expect(radios.map((r) => r.textContent)).toEqual(["All", "Scouts", "People", "Match"]);
+    expect(radios.map((r) => r.textContent)).toEqual(["All", "Scout", "People", "Match"]);
     expect(pill("all")).toHaveAttribute("aria-checked", "true");
     expect(pill("scout")).toHaveAttribute("aria-checked", "false");
     // Labels, not tabs, cards or pages.

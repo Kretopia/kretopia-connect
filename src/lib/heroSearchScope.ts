@@ -32,7 +32,7 @@ export const DEFAULT_SEARCH_SCOPE: SearchScope = "all";
 export const SEARCH_SCOPES: readonly SearchScopeMeta[] = [
   { id: "all", label: "All", description: "Everything on Kretopia", placeholder: "Search people, skills, opportunities and events", placeholderCompact: "Search Kretopia" },
   { id: "people", label: "People", description: "Members and creative profiles", placeholder: "Search people, members and creative profiles", placeholderCompact: "Search people" },
-  { id: "scout", label: "Scouts", description: "Scouting and discovery", placeholder: "Search opportunities to scout and discover", placeholderCompact: "Search opportunities" },
+  { id: "scout", label: "Scout", description: "Scouting and discovery", placeholder: "Search opportunities to scout and discover", placeholderCompact: "Search opportunities" },
   { id: "match", label: "Match", description: "Relevant matches and connections", placeholder: "Search a craft, skill or discipline to match with", placeholderCompact: "Search a craft or skill" },
   { id: "events", label: "Events", description: "Events and related activities", placeholder: "Search events by title, venue or topic", placeholderCompact: "Search events" },
   { id: "soundstages", label: "SoundStages", description: "Live creative rooms", placeholder: "Search SoundStages and live sessions", placeholderCompact: "Search SoundStages" },
