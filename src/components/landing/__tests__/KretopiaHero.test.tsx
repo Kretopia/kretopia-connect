@@ -83,6 +83,23 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(follows(cta, company)).toBe(true);
   });
 
+  it("the supporting line shares one row with the example search, at the same size, and stays readable", () => {
+    renderHero();
+    const support = screen.getByText("Your work, experience and creative credits. One shareable profile.");
+    const prompts = screen.getByTestId("hero-prompts");
+    // One row: the same parent, the example first.
+    expect(support.parentElement).toBe(prompts.parentElement);
+    expect(prompts.compareDocumentPosition(support) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // The same text size as the example, and brighter than the muted "Try".
+    expect(support.className).toContain("text-xs");
+    expect(prompts.className).toContain("text-xs");
+    expect(support.className).toContain("text-foreground/85");
+    expect(support.className).not.toContain("text-muted-foreground");
+    // The button keeps its own block after the row (its offsets are set to hold its position).
+    const cta = screen.getByRole("link", { name: "Create your free Passport" });
+    expect(cta.closest("div")?.className).toContain("md:mt-[3.75rem]");
+  });
+
   it("'People.' wears the page's own gradient class, with nothing of its own added to the gradient", () => {
     renderHero();
     const word = screen.getByRole("heading", { level: 1 }).querySelector(".k-gradient-text") as HTMLElement;

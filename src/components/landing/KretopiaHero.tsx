@@ -456,16 +456,23 @@ export const KretopiaHero = () => {
             onValueChange={setQuery}
             onOpenChange={setSearchOpen}
           />
-          <div className="mt-3">
-            <HeroPromptRotator reducedMotion={reducedMotion} paused={searchOpen || searchFocused} onPick={pickPrompt} />
-          </div>
         </motion.div>
 
-        <motion.p {...rise(0.42)} className="mt-5 max-w-xl text-sm text-muted-foreground [text-shadow:0_0_14px_hsl(var(--background)/0.9)] sm:text-[0.9375rem]">
-          Your work, experience and creative credits. One shareable profile.
-        </motion.p>
+        {/* One quiet line under the field: the example search that rotates, then what the Passport is, at the same size. The example sits in a
+            fixed-width slot, so its changing length never moves the sentence beside it. On a phone the two stack. */}
+        <motion.div
+          {...rise(0.36)}
+          className="mt-3 flex w-full max-w-[56rem] flex-col items-center md:flex-row md:justify-center md:gap-4"
+        >
+          <HeroPromptRotator reducedMotion={reducedMotion} paused={searchOpen || searchFocused} onPick={pickPrompt} className="md:w-[17rem] md:shrink-0 md:justify-end" />
+          <span aria-hidden className="hidden h-3.5 w-px shrink-0 bg-border md:block" />
+          <p className="min-h-8 max-w-[22rem] text-center [text-wrap:balance] text-xs font-medium leading-4 text-foreground/85 [text-shadow:0_0_14px_hsl(var(--background)/0.9)] md:min-h-0 md:max-w-none md:shrink-0 md:whitespace-nowrap md:text-left">
+            Your work, experience and creative credits. One shareable profile.
+          </p>
+        </motion.div>
 
-        <motion.div {...rise(0.5)} className="mt-5 flex flex-col items-center gap-3">
+        {/* The offsets keep the button exactly where it was: the old sentence and its margins (60 px from the example's row, 80 px on a phone) are now the margin. */}
+        <motion.div {...rise(0.5)} className="mt-12 flex flex-col items-center gap-3 sm:mt-7 md:mt-[3.75rem]">
           <GlassCta
             to="/auth?tab=signup"
             size="md"
