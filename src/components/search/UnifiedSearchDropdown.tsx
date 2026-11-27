@@ -15,8 +15,8 @@ import { PublicWebSearchResults } from "./PublicWebSearchResults";
 import { searchVerificationUsers, VERIFICATION_SEARCH_PAGE_SIZE } from "@/lib/verificationUserSearch";
 import { Button } from "@/components/ui/button";
 import { analytics } from "@/lib/analytics";
+import { directTarget, opportunityTiming, queryClass, snippetAround, whyOpportunity, whyPerson, type RoutableResult } from "@/lib/searchResultView";
 import { SEARCH_SCOPES, DEFAULT_SEARCH_SCOPE, isSearchScope, scopeSearchTarget, scopeSources, searchScopeMeta, type SearchScope } from "@/lib/heroSearchScope";
-import { POST_SIGNUP_STASH_KEY, usableDestination } from "@/lib/postSignupDestination";
 import { searchScoutPeople, scoutSearchTarget, SCOUT_PEOPLE_PAGE_SIZE } from "@/lib/scoutPeopleSearch";
 import { HeroIntentPanel, type IntentResult } from "@/components/search/HeroIntentPanel";
 import {
@@ -35,11 +35,26 @@ interface SearchResult {
   title: string;
   subtitle?: string;
   avatar?: string | null;
+  /** The miniature of a result (a photo, a poster, a project still): what it is at a glance. */
+  thumbnail?: string | null;
+  /** One line of evidence under the subtitle (the part of a bio that matched, a project's context). */
+  detail?: string | null;
+  /** Why the result appears: the field that matched the words, never a score. */
+  why?: string | null;
+  /** Timing, said honestly: a deadline, a date, the age of a post. */
+  timing?: string | null;
+  /** The timing says it is over: the row is not presented as open. */
+  closed?: boolean;
   bio?: string;
   credits?: { project: string; role: string }[];
   is_claimed?: boolean;
   is_connected?: boolean;
 }
+
+/** The public columns each intent read returns (see opportunityColumns.ts: guest contact columns are never selected). */
+interface OpportunityRow { id: string; title: string; type?: string | null; compensation?: string | null; location?: string | null; image_url?: string | null; application_deadline?: string | null; created_at?: string | null; skills?: string[] | null }
+interface JamRow { id: string; title: string; start_time?: string | null; venue_name?: string | null; cover_image_url?: string | null }
+interface CreditRow { id: string; project_name?: string | null; role?: string | null; year?: number | string | null; project_type?: string | null; thumbnail_url?: string | null }
 
 interface UnifiedSearchDropdownProps {
   variant?: "hero" | "navbar" | "inline";
@@ -133,7 +148,7 @@ export function UnifiedSearchDropdown({
   resultsMaxHeight,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user } = useAuth();
   const intentMode = intentSearch && variant === "hero" && !usersOnly;
   const [exploreCategory, setExploreCategory] = useState<ExploreByCategoryId | null>(null);
   const [scopeState, setScopeState] = useState<SearchScope>(DEFAULT_SEARCH_SCOPE);
@@ -146,7 +161,6 @@ export function UnifiedSearchDropdown({
     setScopeState(next);
     onScopeChange?.(next);
     setExploreCategory(null);
-    setGateAsked(false);
     if (focusField) inputRef.current?.focus();
   };
   /** Left and right move between topics, as in any radio group; the field is not stolen while someone is on the labels. */
@@ -158,15 +172,13 @@ export function UnifiedSearchDropdown({
     changeScope(next, false);
     requestAnimationFrame(() => pillsRef.current?.querySelector<HTMLButtonElement>(`[data-scope-pill="${next}"]`)?.focus());
   };
-  /** A guest sees that results exist but opens none: any way into a result asks for sign-up instead of navigating. */
-  const guestGated = !!scope && !user && !authLoading;
-  const [gateAsked, setGateAsked] = useState(false);
-  const gateRef = useRef<HTMLButtonElement>(null);
   // The old catalog ("Roles") is what "Explore by" replaces, so the intent search never shows it.
   const catalogEnabled = !usersOnly && !intentMode && (showCatalog ?? variant === "hero");
   const minChars = intentMode ? 2 : usersOnly || catalogEnabled ? 1 : 2;
   const [internalQuery, setInternalQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
+  /** The words the current results answer: a direct route is only taken when they are the words just submitted. */
+  const [resultsFor, setResultsFor] = useState("");
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [highlightedCreator, setHighlightedCreator] = useState<SearchResult | null>(null);
@@ -247,43 +259,104 @@ export function UnifiedSearchDropdown({
 
     try {
       if (intentMode) {
-        // Only the sources of the scope are asked: all of them under All, one under a chosen scope. Everything here is public-safe for a guest;
-        // Skills are answered from the vocabulary and SoundStages opens its own page, so neither fetches anything.
-        const want = scope ? scopeSources(scope) : { people: true, skills: true, opportunities: true, events: false, stages: false };
+        // Only the sources of the scope are asked: all of them under All, one under a chosen scope. Everything here is public: the public
+        // profile view, the public opportunity columns, public events and project credits. A guest gets all of it; Skills are answered
+        // from the vocabulary and SoundStages opens its own page, so neither fetches anything.
+        const want = scope ? scopeSources(scope) : { people: true, skills: true, opportunities: true, events: false, work: false, stages: false };
         const nothing = Promise.resolve(null);
-        const [people, gigs, jams] = await Promise.allSettled([
+        const like = escapePostgrestValue(`%${q}%`);
+        // Public columns only (opportunities keeps its guest contact columns locked); the first read adds the miniature and the timing,
+        // and if a deployment lacks one of them the read repeats with the basics, so a missing thumbnail never costs the answer.
+        const readOpportunities = async () => {
+          const rich = await supabase.from("opportunities").select("id, title, type, compensation, location, image_url, application_deadline, created_at, skills").eq("status", "active").ilike("title", `%${q}%`).limit(3);
+          if (!rich.error) return rich;
+          return supabase.from("opportunities").select("id, title, type, compensation, location").eq("status", "active").ilike("title", `%${q}%`).limit(3);
+        };
+        const [people, gigs, jams, credits] = await Promise.allSettled([
           want.people ? searchScoutPeople(q, 0) : nothing,
-          want.opportunities ? supabase.from("opportunities").select("id, title, type, compensation, location").eq("status", "active").ilike("title", `%${q}%`).limit(3) : nothing,
+          want.opportunities ? readOpportunities() : nothing,
           want.events
             ? supabase
                 .from("creative_jams")
-                .select("id, title, start_time, venue_name")
+                .select("id, title, start_time, venue_name, cover_image_url")
                 .eq("is_public", true)
                 .gte("start_time", new Date().toISOString())
-                .or(`title.ilike.${escapePostgrestValue(`%${q}%`)},venue_name.ilike.${escapePostgrestValue(`%${q}%`)}`)
+                .or(`title.ilike.${like},venue_name.ilike.${like}`)
                 .order("start_time", { ascending: true })
                 .limit(3)
             : nothing,
+          want.work ? supabase.from("credits").select("id, project_name, role, year, project_type, thumbnail_url").ilike("project_name", `%${q}%`).limit(8) : nothing,
         ]);
         if (controller.signal.aborted) return;
-        const gigRows = gigs.status === "fulfilled" ? (gigs.value === null ? [] : gigs.value.error ? null : gigs.value.data ?? []) : null;
-        const jamRows = jams.status === "fulfilled" ? (jams.value === null ? [] : jams.value.error ? null : jams.value.data ?? []) : null;
+        const rowsOf = <T,>(outcome: PromiseSettledResult<unknown>): T[] | null => {
+          if (outcome.status !== "fulfilled") return null;
+          if (outcome.value === null) return [];
+          const reply = outcome.value as { error: unknown; data: unknown[] | null };
+          return reply.error ? null : ((reply.data ?? []) as T[]);
+        };
+        const gigRows = rowsOf<OpportunityRow>(gigs);
+        const jamRows = rowsOf<JamRow>(jams);
         const peopleOk = people.status === "fulfilled";
-        // It fails only when every source that was asked failed.
+        // It fails only when every source that was asked failed. Work is a bonus source: its absence is never an error.
         const failed = [want.people && !peopleOk, want.opportunities && gigRows === null, want.events && jamRows === null].filter(Boolean).length;
         const asked = [want.people, want.opportunities, want.events].filter(Boolean).length;
         if (asked > 0 && failed === asked) throw people.status === "rejected" ? people.reason : new Error("search failed");
+
         const peopleRows: SearchResult[] = people.status === "fulfilled" && people.value
-          ? people.value.users.slice(0, 3).map(p => ({ type: "creator", id: p.user_id, title: p.full_name || "Kretopia user", subtitle: [p.role, p.location].filter(Boolean).join(" · "), avatar: p.avatar_url }))
+          ? people.value.users.slice(0, 3).map((p) => {
+              const why = whyPerson(q, { name: p.full_name, role: p.role, bio: p.bio, location: p.location });
+              const evidence = snippetAround(p.bio, q);
+              return {
+                type: "creator" as const,
+                id: p.user_id,
+                title: p.full_name || "Kretopia user",
+                subtitle: [p.role, p.location].filter(Boolean).join(" · "),
+                avatar: p.avatar_url,
+                thumbnail: p.avatar_url,
+                why,
+                detail: evidence && evidence !== why ? evidence : null,
+              };
+            })
           : [];
-        const gigResults: SearchResult[] = (gigRows ?? []).map(o => ({ type: "gig", id: o.id, title: o.title, subtitle: [o.type, o.compensation, o.location].filter(Boolean).join(" · ") }));
-        const eventResults: SearchResult[] = (jamRows ?? []).map(j => ({
-          type: "event",
+        const gigResults: SearchResult[] = (gigRows ?? []).map((o) => {
+          const timing = opportunityTiming(o.application_deadline, o.created_at);
+          return {
+            type: "gig" as const,
+            id: o.id,
+            title: o.title,
+            subtitle: [o.type, o.compensation, o.location].filter(Boolean).join(" · "),
+            thumbnail: o.image_url ?? null,
+            why: whyOpportunity(q, { title: o.title, type: o.type, skills: o.skills, location: o.location }),
+            timing: timing?.label ?? null,
+            closed: timing?.closed ?? false,
+          };
+        });
+        const eventResults: SearchResult[] = (jamRows ?? []).map((j) => ({
+          type: "event" as const,
           id: j.id,
           title: j.title,
           subtitle: [j.start_time ? new Date(j.start_time).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : null, j.venue_name].filter(Boolean).join(" · "),
+          thumbnail: j.cover_image_url ?? null,
         }));
-        setResults([...peopleRows, ...gigResults, ...eventResults]);
+        // Work: one row per project name (a credit is one person's line on it), shown with the kind of project and how many credits carry it.
+        const projects = new Map<string, { row: CreditRow; count: number }>();
+        for (const c of rowsOf<CreditRow>(credits) ?? []) {
+          const key = String(c.project_name ?? "").trim().toLowerCase();
+          if (!key) continue;
+          const seen = projects.get(key);
+          if (seen) seen.count += 1;
+          else projects.set(key, { row: c, count: 1 });
+        }
+        const workResults: SearchResult[] = Array.from(projects.values()).slice(0, 3).map(({ row, count }) => ({
+          type: "credit" as const,
+          id: row.id,
+          title: row.project_name ?? "",
+          subtitle: [row.project_type, row.year].filter(Boolean).join(" · "),
+          thumbnail: row.thumbnail_url ?? null,
+          detail: `${count} ${count === 1 ? "credit" : "credits"} on Kretopia`,
+        }));
+        setResults([...peopleRows, ...gigResults, ...workResults, ...eventResults]);
+        setResultsFor(q);
         setLoading(false);
         return;
       }
@@ -468,36 +541,6 @@ export function UnifiedSearchDropdown({
     return true;
   };
 
-  /** Where the search lands for the topic and words in force: what a guest returns to after signing up or in. */
-  const searchContextTarget = () => {
-    const words = query.trim();
-    const target = scopeSearchTarget(scope ?? DEFAULT_SEARCH_SCOPE, words, {
-      people: results.filter(r => r.type === "creator").length,
-      skills: words ? searchExploreBy(words, 1).length : 0,
-      opportunities: results.filter(r => r.type === "gig").length,
-      events: results.filter(r => r.type === "event").length,
-    });
-    return usableDestination(words ? target : target.replace(/[?&]q=$/, ""));
-  };
-
-  const askGate = useCallback(() => {
-    setGateAsked(true);
-    setOpen(true);
-    onOpenChange?.(true);
-    requestAnimationFrame(() => gateRef.current?.focus());
-  }, [onOpenChange]);
-
-  /** Sign up or sign in, leaving the topic and the words where the app's own post-auth return will find them. */
-  const goToAuth = (tab: "signup" | "signin") => {
-    const destination = searchContextTarget();
-    if (destination) {
-      try { sessionStorage.setItem(POST_SIGNUP_STASH_KEY, destination); } catch { /* storage blocked: the sign-up still works */ }
-    }
-    setOpen(false);
-    onOpenChange?.(false);
-    navigate(`/auth?tab=${tab}`);
-  };
-
   const handleCatalogSelect = (entry: CatalogEntry) => {
     if (variant === "hero") { submitQuery(query); return; }
     const target = `/search?q=${encodeURIComponent(entry.label)}`;
@@ -510,11 +553,11 @@ export function UnifiedSearchDropdown({
 
   const handleSelect = (r: SearchResult) => {
     if (disabled) return;
-    if (guestGated) { askGate(); return; }
     if (catalogEnabled && variant !== "hero" && !onSelect) {
       const target = r.type === "creator" ? `/profile/${r.id}` : r.type === "gig" ? `/opportunity/${r.id}` : r.type === "event" ? `/event/${r.id}` : `/production?name=${encodeURIComponent(r.title)}`;
       if (requireAuthFor(target)) return;
     }
+    if (scope) analytics.featureUsed("landing_hero_search_result", { scope, group: r.type });
     setOpen(false);
     setQuery("");
     setResults([]);
@@ -543,8 +586,13 @@ export function UnifiedSearchDropdown({
     setOpen(false);
     onOpenChange?.(false);
 
-    if (scope) analytics.featureUsed("landing_hero_search", { scope });
-    if (guestGated && !onQuerySubmit) { askGate(); return; }
+    // An unmistakable match skips the results: an exact, unique name opens that public profile, an exact, unique title that
+    // opportunity. Only when the results on screen answer the words just submitted; anything uncertain stays a mixed search.
+    const routable: RoutableResult[] = results.map((r) => ({ kind: r.type === "creator" ? "person" : r.type === "gig" ? "opportunity" : r.type === "event" ? "event" : "work", id: r.id, title: r.title }));
+    const fresh = resultsFor === trimmedQuery;
+    const direct = scope && fresh ? directTarget(scope, trimmedQuery, routable) : null;
+    // What is measured is the kind of search and where it went, never the words.
+    if (scope) analytics.featureUsed("landing_hero_search", { scope, class: fresh ? queryClass(trimmedQuery, routable) : "unresolved", route: direct ? "direct" : "scope" });
 
     if (onQuerySubmit) {
       if (scope) onQuerySubmit(trimmedQuery, scope);
@@ -553,6 +601,10 @@ export function UnifiedSearchDropdown({
     }
 
     setQuery("");
+    if (direct) {
+      navigate(direct);
+      return;
+    }
     if (intentMode && scope) {
       // The scope travels with the words: a chosen scope opens its own area, All opens the first area with an answer.
       navigate(scopeSearchTarget(scope, trimmedQuery, {
@@ -573,11 +625,10 @@ export function UnifiedSearchDropdown({
       return;
     }
     navigate(scoutSearchTarget(rawQuery));
-  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly, intentMode, results, scope, guestGated, askGate]);
+  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly, intentMode, results, resultsFor, scope]);
 
   // Skills → Explore by → an item: the matching professionals, in Match.
   const handleExplore = (entry: ExploreByItem) => {
-    if (guestGated) { askGate(); return; }
     setOpen(false);
     onOpenChange?.(false);
     setQuery("");
@@ -589,7 +640,6 @@ export function UnifiedSearchDropdown({
   const handleSeeAll = (target: SearchIntent) => {
     const words = query.trim();
     if (!words) return;
-    if (guestGated) { askGate(); return; }
     setOpen(false);
     onOpenChange?.(false);
     setQuery("");
@@ -600,7 +650,6 @@ export function UnifiedSearchDropdown({
   const handleSeeAllScope = (target: SearchScope) => {
     const words = query.trim();
     if (!words) return;
-    if (guestGated) { askGate(); return; }
     setOpen(false);
     onOpenChange?.(false);
     setQuery("");
@@ -905,8 +954,9 @@ export function UnifiedSearchDropdown({
                 people={results.filter((r) => r.type === "creator") as IntentResult[]}
                 opportunities={results.filter((r) => r.type === "gig") as IntentResult[]}
                 events={results.filter((r) => r.type === "event") as IntentResult[]}
+                work={results.filter((r) => r.type === "credit") as IntentResult[]}
+                onBroaden={() => { setQuery(""); setExploreCategory(null); inputRef.current?.focus(); }}
                 scope={scope}
-                locked={guestGated}
                 onSeeAllScope={handleSeeAllScope}
                 loading={loading}
                 error={error}
@@ -918,24 +968,6 @@ export function UnifiedSearchDropdown({
                 onSeeAll={handleSeeAll}
                 onRetry={() => doSearch(query.trim())}
               />
-              {guestGated && (gateAsked || (query.trim() !== "" && (results.length > 0 || (!!scope && scopeSources(scope).skills && searchExploreBy(query.trim(), 1).length > 0)))) ? (
-                // For a guest: results exist, and none opens without an account. Quiet, in the panel, never a wall.
-                <div data-search-gate role="status" className="order-first border-b border-border bg-muted/30 px-4 py-3 text-left">
-                  <p className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                    Sign up free to view full results.
-                  </p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">Your topic and search are kept for when you come back.</p>
-                  <div className="mt-2.5 flex items-center gap-2">
-                    <Button ref={gateRef} type="button" size="sm" data-search-result onKeyDown={handleResultKeyDown} onClick={() => goToAuth("signup")}>
-                      Sign up
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" data-search-result onKeyDown={handleResultKeyDown} onClick={() => goToAuth("signin")}>
-                      Sign in
-                    </Button>
-                  </div>
-                </div>
-              ) : null}
             </>) : (<>
             {isHero && !usersOnly && <div className="order-first border-b border-border px-4 py-3 text-left"><p className="text-xs font-semibold text-foreground">Explore Kretopia</p></div>}
             {catalogMatches.length > 0 && (

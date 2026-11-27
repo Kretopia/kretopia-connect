@@ -1,8 +1,9 @@
-import { createContext, useContext, type KeyboardEvent, type ReactNode } from "react";
-import { ArrowLeft, ArrowRight, Briefcase, Building2, CalendarDays, ChevronRight, Clapperboard, Lock, Music, Palette, Radio, Search, Wand2, type LucideIcon } from "lucide-react";
+import { useState, type KeyboardEvent, type ReactNode } from "react";
+import { ArrowLeft, ArrowRight, Briefcase, Building2, CalendarDays, ChevronRight, Clapperboard, Music, Palette, Radio, Search, Wand2, type LucideIcon } from "lucide-react";
 
 import { KretopiaLoader } from "@/components/brand/KretopiaLoader";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { RESULT_ACTION, resultsSummary, type ResultKind } from "@/lib/searchResultView";
 import {
   EXPLORE_BY,
   exploreByCategory,
@@ -15,25 +16,30 @@ import {
 import { scopeSources, searchScopeMeta, type SearchScope } from "@/lib/heroSearchScope";
 import { cn } from "@/lib/utils";
 
-/** What the panel needs of a result row: people and opportunities share the same shape. */
+/** What the panel needs of a result row: people, opportunities, work and events share one shape. */
 export interface IntentResult {
-  type: "creator" | "gig" | "event";
+  type: "creator" | "gig" | "event" | "credit";
   id: string;
   title: string;
   subtitle?: string;
   avatar?: string | null;
+  /** The miniature: a photo, a poster, a project still. */
+  thumbnail?: string | null;
+  /** One line of evidence. */
+  detail?: string | null;
+  /** Why the row appears: the field that matched. */
+  why?: string | null;
+  /** Timing, said honestly (a deadline, a date, the age of a post). */
+  timing?: string | null;
+  /** The timing says it is over: the row is not presented as open. */
+  closed?: boolean;
 }
 
-/** For a guest, rows say "this needs an account" with a lock where the arrow would be. */
-const LockedContext = createContext(false);
+const KIND: Record<IntentResult["type"], ResultKind> = { creator: "person", gig: "opportunity", event: "event", credit: "work" };
 
+/** The trailing arrow of a row. */
 function Go({ className }: { className?: string }) {
-  const locked = useContext(LockedContext);
-  return locked ? (
-    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-label="Needs an account" />
-  ) : (
-    <ArrowRight className={cn("h-4 w-4 shrink-0 text-primary", className)} aria-hidden />
-  );
+  return <ArrowRight className={cn("h-4 w-4 shrink-0 text-primary", className)} aria-hidden />;
 }
 
 const CATEGORY_ICON: Record<ExploreByCategoryId, LucideIcon> = {
@@ -68,8 +74,10 @@ interface HeroIntentPanelProps {
   events?: IntentResult[];
   /** Open the full search behind a scope (its own page, with the words in its search bar). */
   onSeeAllScope?: (scope: SearchScope) => void;
-  /** A guest: results are shown but none opens without an account, so rows carry a lock instead of an arrow. */
-  locked?: boolean;
+  /** Public work records (projects and the credits on them). */
+  work?: IntentResult[];
+  /** "Try a broader role or skill": the host clears the words and shows the vocabulary again. */
+  onBroaden?: () => void;
 }
 
 const row =
@@ -128,24 +136,56 @@ function SeeAll({ label, onClick, onKeyDown }: { label: string; onClick: () => v
   );
 }
 
+const THUMB_ICON: Record<IntentResult["type"], LucideIcon> = { creator: Search, gig: Briefcase, event: CalendarDays, credit: Clapperboard };
+
+/** The miniature of a result: the photo when there is one and it loads, otherwise the kind's own icon on a quiet tile. */
+function Thumb({ result }: { result: IntentResult }) {
+  const [failed, setFailed] = useState(false);
+  const src = result.thumbnail || result.avatar || null;
+  if (result.type === "creator") {
+    return (
+      <Avatar className="h-12 w-12 shrink-0 rounded-xl">
+        <AvatarImage src={src || ""} alt="" className="object-cover" />
+        <AvatarFallback className="rounded-xl bg-primary/10 text-sm text-primary">{(result.title || "?")[0]}</AvatarFallback>
+      </Avatar>
+    );
+  }
+  const Icon = THUMB_ICON[result.type];
+  return (
+    <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-border bg-muted/60">
+      {src && !failed ? (
+        <img src={src} alt="" loading="lazy" decoding="async" onError={() => setFailed(true)} className="absolute inset-0 h-full w-full object-cover" />
+      ) : (
+        <Icon className="h-5 w-5 text-muted-foreground" aria-hidden />
+      )}
+    </span>
+  );
+}
+
+/**
+ * One result, answering three questions at a glance: what is this (miniature, title, subtitle, a line of evidence), why is it relevant
+ * (the field that matched, never a score) and what can I do next (a specific action, not "View" everywhere). A closed opportunity says
+ * so and is not shown as open.
+ */
 function ResultRow({ result, onSelect, onKeyDown }: { result: IntentResult; onSelect: HeroIntentPanelProps["onSelectResult"]; onKeyDown: HeroIntentPanelProps["onKeyDown"] }) {
   return (
-    <button type="button" data-search-result onKeyDown={onKeyDown} onClick={() => onSelect(result)} className={row}>
-      {result.type === "creator" ? (
-        <Avatar className="h-8 w-8 shrink-0">
-          <AvatarImage src={result.avatar || ""} />
-          <AvatarFallback className="bg-primary/10 text-xs text-primary">{(result.title || "?")[0]}</AvatarFallback>
-        </Avatar>
-      ) : (
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-          {result.type === "event" ? <CalendarDays className="h-3.5 w-3.5 text-primary" aria-hidden /> : <Briefcase className="h-3.5 w-3.5 text-primary" aria-hidden />}
-        </span>
-      )}
+    <button type="button" data-search-result data-result-kind={KIND[result.type]} onKeyDown={onKeyDown} onClick={() => onSelect(result)} className={cn(row, "items-start py-3", result.closed && "opacity-75")}>
+      <Thumb result={result} />
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-foreground">{result.title}</span>
-        {result.subtitle ? <span className="block truncate text-[11px] text-muted-foreground">{result.subtitle}</span> : null}
+        <span className="block truncate text-sm font-semibold text-foreground">{result.title}</span>
+        {result.subtitle ? <span className="block truncate text-xs text-muted-foreground">{result.subtitle}</span> : null}
+        {result.detail ? <span className="mt-0.5 line-clamp-2 block text-[11px] leading-snug text-muted-foreground/90">{result.detail}</span> : null}
+        {result.why || result.timing ? (
+          <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
+            {result.why ? <span className="rounded-full border border-border bg-muted/40 px-2 py-px text-muted-foreground">{result.why}</span> : null}
+            {result.timing ? <span className={result.closed ? "font-medium text-destructive" : "text-muted-foreground"}>{result.timing}</span> : null}
+          </span>
+        ) : null}
       </span>
-      <Go />
+      <span className="ml-auto flex shrink-0 items-center gap-1 self-center pl-1 text-xs font-semibold text-primary">
+        <span className="hidden sm:inline">{RESULT_ACTION[KIND[result.type]]}</span>
+        <Go />
+      </span>
     </button>
   );
 }
@@ -207,9 +247,9 @@ function ExploreBy({ category, onCategoryChange, onKeyDown, onExplore }: Pick<He
  * up to three sections (People, Skills, Opportunities), each only if it has something, each saying which feature it belongs to.
  * Real, public-safe records for a guest; semantic tokens only; the loader is the shared K mark.
  */
-function HeroIntentPanelBody({ query, people, opportunities, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSeeAll, onRetry, scope, events = [], onSeeAllScope }: HeroIntentPanelProps) {
+function HeroIntentPanelBody({ query, people, opportunities, loading, error, category, onCategoryChange, onKeyDown, onSelectResult, onExplore, onSeeAll, onRetry, scope, events = [], work = [], onSeeAllScope, onBroaden }: HeroIntentPanelProps) {
   const typed = query.trim();
-  const sources = scope ? scopeSources(scope) : { people: true, skills: true, opportunities: true, events: false, stages: false };
+  const sources = scope ? scopeSources(scope) : { people: true, skills: true, opportunities: true, events: false, work: false, stages: false };
   // The vocabulary ("Explore by") is for All and Match; the other scopes have none to browse.
   if (!typed) {
     return !scope || sources.skills ? <ExploreBy category={category} onCategoryChange={onCategoryChange} onKeyDown={onKeyDown} onExplore={onExplore} /> : <ScopeHint scope={scope} />;
@@ -219,10 +259,14 @@ function HeroIntentPanelBody({ query, people, opportunities, loading, error, cat
   const shownPeople = sources.people ? people : [];
   const shownOpportunities = sources.opportunities ? opportunities : [];
   const shownEvents = sources.events ? events : [];
-  const hasAny = shownPeople.length > 0 || skills.length > 0 || shownOpportunities.length > 0 || shownEvents.length > 0;
+  const shownWork = sources.work ? work : [];
+  const hasAny = shownPeople.length > 0 || skills.length > 0 || shownOpportunities.length > 0 || shownEvents.length > 0 || shownWork.length > 0;
 
   return (
     <>
+      {/* Neutral words: the visitor is not assumed to want a job. */}
+      {hasAny ? <p className="border-b border-border px-4 py-2 text-xs font-medium text-muted-foreground">{resultsSummary(typed)}</p> : null}
+
       {shownPeople.length > 0 ? (
         <Section intent="people">
           {shownPeople.map((p) => <ResultRow key={`creator-${p.id}`} result={p} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
@@ -256,6 +300,12 @@ function HeroIntentPanelBody({ query, people, opportunities, loading, error, cat
         </Section>
       ) : null}
 
+      {shownWork.length > 0 ? (
+        <PlainSection label="Work" caption="Projects and credits on Kretopia">
+          {shownWork.map((w) => <ResultRow key={`work-${w.id}`} result={w} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
+        </PlainSection>
+      ) : null}
+
       {shownEvents.length > 0 ? (
         <PlainSection label="Events" caption="Coming up on Kretopia">
           {shownEvents.map((e) => <ResultRow key={`event-${e.id}`} result={e} onSelect={onSelectResult} onKeyDown={onKeyDown} />)}
@@ -283,23 +333,13 @@ function HeroIntentPanelBody({ query, people, opportunities, loading, error, cat
 
       {!loading && !error && !hasAny && !sources.stages ? (
         <div>
-          {scope && scope !== "all" ? (
-            <>
-              <p className="px-4 pb-1 pt-3 text-sm text-muted-foreground">Nothing matches “{typed}” in {searchScopeMeta(scope).label} yet. Open its full search:</p>
-              <SeeAll
-                label={`Search ${searchScopeMeta(scope).label} for “${typed}”`}
-                onClick={() => (scope === "events" ? onSeeAllScope?.("events") : onSeeAll(scope === "scout" ? "opportunities" : scope === "match" ? "skills" : "people"))}
-                onKeyDown={onKeyDown}
-              />
-            </>
-          ) : (
-            <>
-              <p className="px-4 pb-1 pt-3 text-sm text-muted-foreground">Nothing matches “{typed}” yet. Search the whole of Kretopia instead:</p>
-              <SeeAll label={`Search people and skills for “${typed}”`} onClick={() => onSeeAll("people")} onKeyDown={onKeyDown} />
-              <SeeAll label={`Search opportunities for “${typed}”`} onClick={() => onSeeAll("opportunities")} onKeyDown={onKeyDown} />
-              {scope === "all" ? <SeeAll label={`Search events for “${typed}”`} onClick={() => onSeeAllScope?.("events")} onKeyDown={onKeyDown} /> : null}
-            </>
-          )}
+          {/* Truthful, and still useful: no exact match is claimed, and the next steps are adjacent ones. */}
+          <p className="px-4 pb-1 pt-3 text-sm text-foreground">We couldn’t find an exact match for “{typed}”.</p>
+          <p className="px-4 pb-1 text-xs text-muted-foreground">Here is where to go next.</p>
+          {scope !== "people" ? <SeeAll label={`Explore people for “${typed}”`} onClick={() => onSeeAll("people")} onKeyDown={onKeyDown} /> : null}
+          {scope !== "scout" ? <SeeAll label={`See related opportunities for “${typed}”`} onClick={() => onSeeAll("opportunities")} onKeyDown={onKeyDown} /> : null}
+          {scope === "events" || scope === "all" ? <SeeAll label={`Search events for “${typed}”`} onClick={() => onSeeAllScope?.("events")} onKeyDown={onKeyDown} /> : null}
+          {onBroaden ? <SeeAll label="Try a broader role or skill" onClick={onBroaden} onKeyDown={onKeyDown} /> : null}
         </div>
       ) : null}
     </>
@@ -307,11 +347,7 @@ function HeroIntentPanelBody({ query, people, opportunities, loading, error, cat
 }
 
 export function HeroIntentPanel(props: HeroIntentPanelProps) {
-  return (
-    <LockedContext.Provider value={!!props.locked}>
-      <HeroIntentPanelBody {...props} />
-    </LockedContext.Provider>
-  );
+  return <HeroIntentPanelBody {...props} />;
 }
 
 export default HeroIntentPanel;

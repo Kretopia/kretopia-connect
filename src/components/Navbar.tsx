@@ -188,7 +188,8 @@ const Navbar = memo(({ user }: NavbarProps) => {
     { path: "/landing", label: "Platform" },
     { path: "/passport", label: "For Creatives" },
     { path: "/post-opportunity", label: "For Companies" },
-    { path: "/discover", label: "Discover" },
+    // Discover opens Scout, for a visitor as for a member: the same public discovery of opportunities.
+    { path: SCOUT_PATH, label: "Discover" },
   ];
   // The signed-out bar is the designer's: always visible and never dimmed, unlike the signed-in bar below.
   const guestBar = !user;
@@ -279,7 +280,7 @@ const Navbar = memo(({ user }: NavbarProps) => {
             from lg they are one group on the right. */}
         <div className="contents lg:col-start-3 lg:row-start-1 lg:flex lg:items-center lg:justify-end lg:gap-2.5">
           <div className="col-start-2 row-start-2 flex items-center justify-self-end gap-0.5 sm:gap-1 lg:col-auto lg:row-auto lg:justify-self-auto">
-            {searchSheet}
+            {/* No magnifying glass for a visitor: the search is the hero's own field, and the bar keeps only the theme. */}
             <ThemeToggle />
           </div>
           <div className="col-span-2 col-start-1 row-start-1 flex items-center gap-2 justify-self-end lg:col-auto lg:row-auto lg:justify-self-auto">

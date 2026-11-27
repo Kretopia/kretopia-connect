@@ -190,11 +190,12 @@ describe("Enter, with nothing picked", () => {
 });
 
 describe("when nothing matches", () => {
-  it("says so and still offers the full searches", async () => {
+  it("says so without inventing a match, and offers the adjacent searches", async () => {
     renderHero();
     type("Zzyzx");
-    await screen.findByText(/Nothing matches “Zzyzx” yet/);
-    fireEvent.click(screen.getByRole("button", { name: /Search opportunities for “Zzyzx”/ }));
+    await screen.findByText(/We couldn’t find an exact match for “Zzyzx”/);
+    expect(screen.getByRole("button", { name: /Explore people for “Zzyzx”/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /See related opportunities for “Zzyzx”/ }));
     await waitFor(() => expect(where()).toBe("/scout?q=Zzyzx"));
   });
 });
