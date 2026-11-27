@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
+import { cn } from "@/lib/utils";
+
 import { HERO_PROMPTS, HERO_PROMPT_INTERVAL_MS, nextPromptIndex, type HeroPrompt } from "@/lib/heroJourneys";
 
 interface HeroPromptRotatorProps {
@@ -10,6 +12,8 @@ interface HeroPromptRotatorProps {
   /** A prompt was picked: put its words in the search. */
   onPick: (prompt: HeroPrompt) => void;
   prompts?: readonly HeroPrompt[];
+  /** Merged into the row: a host can align it or give it a fixed width. */
+  className?: string;
 }
 
 /**
@@ -18,7 +22,7 @@ interface HeroPromptRotatorProps {
  * pointer or focus is on it or the search is open, and under prefers-reduced-motion it simply shows the first example and stays.
  * The row has a fixed height, so a longer example never moves the content below it.
  */
-export function HeroPromptRotator({ reducedMotion, paused = false, onPick, prompts = HERO_PROMPTS }: HeroPromptRotatorProps) {
+export function HeroPromptRotator({ reducedMotion, paused = false, onPick, prompts = HERO_PROMPTS, className }: HeroPromptRotatorProps) {
   const [index, setIndex] = useState(0);
   const [held, setHeld] = useState(false);
   const rotating = !reducedMotion && !paused && !held && prompts.length > 1;
@@ -37,7 +41,7 @@ export function HeroPromptRotator({ reducedMotion, paused = false, onPick, promp
   if (!prompt) return null;
 
   return (
-    <div className="flex h-7 items-center justify-center gap-2 text-xs text-muted-foreground" data-testid="hero-prompts">
+    <div className={cn("flex h-7 items-center justify-center gap-2 text-xs text-muted-foreground", className)} data-testid="hero-prompts">
       <span aria-hidden>Try</span>
       <button
         type="button"
