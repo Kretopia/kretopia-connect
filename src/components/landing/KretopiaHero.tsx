@@ -2,10 +2,10 @@
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
  * v15: "Topics". The search bar is the one interaction and says what can be searched with compact topic labels on the bar: All
- * (default), Scouts, People, Match. The topic travels with the words (heroSearchScope.ts) and every topic answers inside the one
+ * (default), Scout, People, Match. The topic travels with the words (heroSearchScope.ts) and every topic answers inside the one
  * results panel of UnifiedSearchDropdown; a guest sees that results exist and signs up to open them (the topic and the words come
  * back through the app's post-auth return). Copy is exactly: eyebrow, "Find Your People." (the shared .k-gradient-text, unmodified),
- * subheading, one supporting line, "Create your free Passport", "Hiring? Post an opportunity free." Choosing Scouts, People or
+ * subheading, one supporting line, "Create your free Passport", "Hiring? Post an opportunity free." Choosing Scout, People or
  * Match tints the horizon.
  *
  * v14: "One search". The journeys and the three actions under the search were removed: the search became the entry point.
