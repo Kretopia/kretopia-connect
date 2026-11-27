@@ -129,18 +129,17 @@ describe("hero search with a scope (signed in)", () => {
     render(<Harness initial="scout" />);
     type("photographer");
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(where()).toBe("/scout?q=photographer");
+    expect(where()).toBe("/search?q=photographer&scope=scout");
     expect(analytics.featureUsed).toHaveBeenCalledWith("landing_hero_search", expect.objectContaining({ scope: "scout" }));
   });
 
-  it("under All, Enter opens the area that has the only answer", async () => {
+  it("under All, a generic query opens the Search Page, which groups every family", async () => {
     mocks.tables.mockImplementation((table: string) => ({ data: table === "creative_jams" ? [jam] : [], error: null }));
     render(<Harness />);
-    // "loft" is in no vocabulary and matches no person or opportunity: only the event answers.
     type("loft");
     await waitFor(() => expect(results()).toHaveTextContent("Electronic music night"));
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(where()).toBe("/meetup?q=loft");
+    expect(where()).toBe("/search?q=loft");
   });
 
   it("calls onQuerySubmit with the scope when the host handles the search itself", () => {
@@ -284,7 +283,7 @@ describe("hero search for a visitor (public discovery, no account needed)", () =
     type("Ethan Auguste");
     await waitFor(() => expect(results().querySelectorAll('[data-result-kind="person"]')).toHaveLength(2));
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(where()).toBe("/match?tab=browse&view=grid&q=Ethan%20Auguste");
+    expect(where()).toBe("/search?q=Ethan%20Auguste&scope=people");
   });
 
   it("an exact, unique opportunity title goes straight to its public page", async () => {
@@ -303,7 +302,15 @@ describe("hero search for a visitor (public discovery, no account needed)", () =
     type("photographer");
     await waitFor(() => expect(results()).toHaveTextContent("Hotel Campaign Bali"));
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(where()).not.toMatch(/^\/profile\/|^\/opportunity\//);
+    expect(where()).toBe("/search?q=photographer");
+  });
+
+  it("every results panel leads to the Search Page with the same words and topic", async () => {
+    mocks.people.mockResolvedValue({ users: [person("p1", "Ada Lovelace")], hasMore: false });
+    render(<TopicsHarness initial="people" />);
+    type("lovelace");
+    fireEvent.click(await screen.findByRole("button", { name: "See all results" }));
+    expect(where()).toBe("/search?q=lovelace&scope=people");
   });
 
   it("says honestly when a deadline has passed", async () => {

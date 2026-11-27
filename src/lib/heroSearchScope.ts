@@ -3,10 +3,10 @@
  * dropdown is not navigation: it says in which context the search runs. The query always travels with its scope, so the same
  * words can mean different things ("photographer" in People, in Scout, in Events) and the sources queried follow the scope.
  *
- *   All         every source at once; Enter opens the area that has an answer
- *   People      members and creative profiles                  -> Match's Grid (where people are searched)
- *   Scout       scouting and discovery: open opportunities      -> Scout
- *   Match       professionals by craft, discipline, skill       -> Match's Grid, with the vocabulary ("Explore by") as suggestions
+ *   All         every source at once                            -> Search Page
+ *   People      members and creative profiles                   -> Search Page, People
+ *   Scout       scouting and discovery: open opportunities      -> Search Page, Opportunities
+ *   Match       professionals by craft, discipline, skill       -> Search Page, Roles & skills
  *   Events      what is on                                      -> Meetup (events)
  *   SoundStages live creative rooms                             -> SoundStages
  *
@@ -63,42 +63,24 @@ export interface ScopedQuery {
   scope: SearchScope;
 }
 
-const MATCH_GRID = "/match?tab=browse&view=grid";
-
-/** What the dropdown found, when Enter has to choose among areas (All). */
-export interface ScopeFound {
-  people: number;
-  skills: number;
-  opportunities: number;
-  events: number;
-}
-
 const enc = (query: string) => encodeURIComponent(query.trim());
 
 /**
- * Where a search lands. A chosen scope always goes to its own area; All goes to the first area that has an answer (people and
- * skills share the Grid, then Scout, then Events) and, with no answer anywhere, to the Grid, which searches in full.
+ * Where a search lands. A generic query goes to the Search Page (/search), which groups what the public sources answer; the topic
+ * travels as `?scope=` and opens the page narrowed to it (Scout: opportunities, People, Match: roles and skills). Events and
+ * SoundStages are not families of the Search Page: they open their own pages with the words in them.
  */
-export function scopeSearchTarget(scope: SearchScope, query: string, found?: ScopeFound): string {
+export function scopeSearchTarget(scope: SearchScope, query: string): string {
   const q = enc(query);
   switch (scope) {
-    case "people":
-    case "match":
-      return `${MATCH_GRID}&q=${q}`;
-    case "scout":
-      return `/scout?q=${q}`;
     case "events":
       return `/meetup?q=${q}`;
     case "soundstages":
       return `/soundstages?q=${q}`;
     case "all":
-    default: {
-      if (found && found.people === 0 && found.skills === 0) {
-        if (found.opportunities > 0) return `/scout?q=${q}`;
-        if (found.events > 0) return `/meetup?q=${q}`;
-      }
-      return `${MATCH_GRID}&q=${q}`;
-    }
+      return `/search?q=${q}`;
+    default:
+      return `/search?q=${q}&scope=${scope}`;
   }
 }
 
