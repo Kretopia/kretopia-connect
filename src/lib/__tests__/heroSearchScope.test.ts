@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_SEARCH_SCOPE,
+  HERO_TOPICS,
+  HERO_TOPIC_PLACEHOLDER,
   SEARCH_SCOPES,
   isSearchScope,
   scopePlaceholder,
@@ -19,7 +21,7 @@ const none = { people: 0, skills: 0, opportunities: 0, events: 0 };
 
 describe("hero search scopes", () => {
   it("are All (the default), People, Scout, Match, Events and SoundStages, in that order", () => {
-    expect(SEARCH_SCOPES.map((s) => s.label)).toEqual(["All", "People", "Scout", "Match", "Events", "SoundStages"]);
+    expect(SEARCH_SCOPES.map((s) => s.label)).toEqual(["All", "People", "Scouts", "Match", "Events", "SoundStages"]);
     expect(DEFAULT_SEARCH_SCOPE).toBe("all");
     expect(SEARCH_SCOPES.map((s) => s.id)).toEqual(["all", "people", "scout", "match", "events", "soundstages"]);
   });
@@ -31,6 +33,11 @@ describe("hero search scopes", () => {
       expect(scopePlaceholder(s.id, true)).toBe(s.placeholderCompact);
       expect(s.placeholderCompact.length).toBeLessThanOrEqual(s.placeholder.length);
     }
+  });
+
+  it("the hero shows four compact topics, in order, each one with a real destination", () => {
+    expect(HERO_TOPICS.map((id) => searchScopeMeta(id).label)).toEqual(["All", "Scouts", "People", "Match"]);
+    expect(HERO_TOPIC_PLACEHOLDER).toBe("Search creatives, skills or opportunities…");
   });
 
   it("recognises its own ids and falls back to All for anything else", () => {

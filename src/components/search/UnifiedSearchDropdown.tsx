@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Sparkles, Database, Briefcase, User, ArrowRight, X, UserCheck, Mic, Square, MapPin, Wand2, Lock, CalendarDays, ChevronDown, Globe, Radio, Telescope, type LucideIcon } from "lucide-react";
+import { Search, Sparkles, Database, Briefcase, User, ArrowRight, X, UserCheck, Mic, Square, MapPin, Wand2, Lock, CalendarDays } from "lucide-react";
 import { KretopiaLoader, KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { useAuth } from "@/hooks/useAuth";
 import { searchCatalog, CATALOG_KIND_LABEL, type CatalogEntry, type CatalogKind } from "@/lib/searchCatalog";
@@ -14,9 +14,9 @@ import { escapePostgrestValue } from "@/lib/postgrestFilter";
 import { PublicWebSearchResults } from "./PublicWebSearchResults";
 import { searchVerificationUsers, VERIFICATION_SEARCH_PAGE_SIZE } from "@/lib/verificationUserSearch";
 import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { analytics } from "@/lib/analytics";
 import { SEARCH_SCOPES, DEFAULT_SEARCH_SCOPE, isSearchScope, scopeSearchTarget, scopeSources, searchScopeMeta, type SearchScope } from "@/lib/heroSearchScope";
+import { POST_SIGNUP_STASH_KEY, usableDestination } from "@/lib/postSignupDestination";
 import { searchScoutPeople, scoutSearchTarget, SCOUT_PEOPLE_PAGE_SIZE } from "@/lib/scoutPeopleSearch";
 import { HeroIntentPanel, type IntentResult } from "@/components/search/HeroIntentPanel";
 import {
@@ -71,13 +71,17 @@ interface UnifiedSearchDropdownProps {
    */
   intentSearch?: boolean;
   /**
-   * The hero's scoped search (needs `intentSearch`): a dropdown at the start of the field narrows where the words are looked for
-   * (All, People, Scout, Match, Events, SoundStages); the scope travels with the query, picks the sources asked while typing and the
-   * page Enter opens. The microphone and the clear button are both kept, and the submit button stays at the end.
+   * The hero's scoped search (needs `intentSearch`): compact topic labels on the bar (All first) narrow where the words are looked
+   * for; the topic travels with the query, picks the sources asked while typing and the page Enter opens. Every topic answers inside
+   * this one results panel. A guest sees that results exist but opens none of them without signing up: a quiet prompt in the panel
+   * carries the topic and the words through sign-up and sign-in (the app's own post-auth return). The microphone and the clear
+   * button are both kept, with a "Search" button at the end.
    */
   scopeSearch?: boolean;
   scope?: SearchScope;
   onScopeChange?: (scope: SearchScope) => void;
+  /** The topics shown as compact labels above the field, in order (default: every scope). */
+  scopes?: readonly SearchScope[];
   /** Caps the results list to this height (any CSS length), for a host that knows how much room is left under the field. */
   resultsMaxHeight?: string;
 }
@@ -87,15 +91,6 @@ const CATALOG_ICON: Record<CatalogKind, typeof User> = {
   skill: Wand2,
   location: MapPin,
   work: Briefcase,
-};
-
-const SCOPE_ICON: Record<SearchScope, LucideIcon> = {
-  all: Globe,
-  people: User,
-  scout: Telescope,
-  match: Wand2,
-  events: CalendarDays,
-  soundstages: Radio,
 };
 
 const TYPE_META = {
@@ -134,22 +129,39 @@ export function UnifiedSearchDropdown({
   scopeSearch = false,
   scope: scopeProp,
   onScopeChange,
+  scopes,
   resultsMaxHeight,
 }: UnifiedSearchDropdownProps) {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const intentMode = intentSearch && variant === "hero" && !usersOnly;
   const [exploreCategory, setExploreCategory] = useState<ExploreByCategoryId | null>(null);
   const [scopeState, setScopeState] = useState<SearchScope>(DEFAULT_SEARCH_SCOPE);
   /** The scope in force: only the hero's scoped search has one. */
   const scope: SearchScope | undefined = scopeSearch && intentMode ? scopeProp ?? scopeState : undefined;
-  const changeScope = (next: string) => {
+  const topics = scopes && scopes.length > 0 ? scopes : SEARCH_SCOPES.map((m) => m.id);
+  const pillsRef = useRef<HTMLDivElement>(null);
+  const changeScope = (next: string, focusField = true) => {
     if (!isSearchScope(next)) return;
     setScopeState(next);
     onScopeChange?.(next);
     setExploreCategory(null);
-    inputRef.current?.focus();
+    setGateAsked(false);
+    if (focusField) inputRef.current?.focus();
   };
+  /** Left and right move between topics, as in any radio group; the field is not stolen while someone is on the labels. */
+  const handleTopicKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (!step) return;
+    e.preventDefault();
+    const next = topics[(index + step + topics.length) % topics.length];
+    changeScope(next, false);
+    requestAnimationFrame(() => pillsRef.current?.querySelector<HTMLButtonElement>(`[data-scope-pill="${next}"]`)?.focus());
+  };
+  /** A guest sees that results exist but opens none: any way into a result asks for sign-up instead of navigating. */
+  const guestGated = !!scope && !user && !authLoading;
+  const [gateAsked, setGateAsked] = useState(false);
+  const gateRef = useRef<HTMLButtonElement>(null);
   // The old catalog ("Roles") is what "Explore by" replaces, so the intent search never shows it.
   const catalogEnabled = !usersOnly && !intentMode && (showCatalog ?? variant === "hero");
   const minChars = intentMode ? 2 : usersOnly || catalogEnabled ? 1 : 2;
@@ -456,6 +468,36 @@ export function UnifiedSearchDropdown({
     return true;
   };
 
+  /** Where the search lands for the topic and words in force: what a guest returns to after signing up or in. */
+  const searchContextTarget = () => {
+    const words = query.trim();
+    const target = scopeSearchTarget(scope ?? DEFAULT_SEARCH_SCOPE, words, {
+      people: results.filter(r => r.type === "creator").length,
+      skills: words ? searchExploreBy(words, 1).length : 0,
+      opportunities: results.filter(r => r.type === "gig").length,
+      events: results.filter(r => r.type === "event").length,
+    });
+    return usableDestination(words ? target : target.replace(/[?&]q=$/, ""));
+  };
+
+  const askGate = useCallback(() => {
+    setGateAsked(true);
+    setOpen(true);
+    onOpenChange?.(true);
+    requestAnimationFrame(() => gateRef.current?.focus());
+  }, [onOpenChange]);
+
+  /** Sign up or sign in, leaving the topic and the words where the app's own post-auth return will find them. */
+  const goToAuth = (tab: "signup" | "signin") => {
+    const destination = searchContextTarget();
+    if (destination) {
+      try { sessionStorage.setItem(POST_SIGNUP_STASH_KEY, destination); } catch { /* storage blocked: the sign-up still works */ }
+    }
+    setOpen(false);
+    onOpenChange?.(false);
+    navigate(`/auth?tab=${tab}`);
+  };
+
   const handleCatalogSelect = (entry: CatalogEntry) => {
     if (variant === "hero") { submitQuery(query); return; }
     const target = `/search?q=${encodeURIComponent(entry.label)}`;
@@ -468,6 +510,7 @@ export function UnifiedSearchDropdown({
 
   const handleSelect = (r: SearchResult) => {
     if (disabled) return;
+    if (guestGated) { askGate(); return; }
     if (catalogEnabled && variant !== "hero" && !onSelect) {
       const target = r.type === "creator" ? `/profile/${r.id}` : r.type === "gig" ? `/opportunity/${r.id}` : r.type === "event" ? `/event/${r.id}` : `/production?name=${encodeURIComponent(r.title)}`;
       if (requireAuthFor(target)) return;
@@ -501,6 +544,7 @@ export function UnifiedSearchDropdown({
     onOpenChange?.(false);
 
     if (scope) analytics.featureUsed("landing_hero_search", { scope });
+    if (guestGated && !onQuerySubmit) { askGate(); return; }
 
     if (onQuerySubmit) {
       if (scope) onQuerySubmit(trimmedQuery, scope);
@@ -529,10 +573,11 @@ export function UnifiedSearchDropdown({
       return;
     }
     navigate(scoutSearchTarget(rawQuery));
-  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly, intentMode, results, scope]);
+  }, [navigate, onOpenChange, onQuerySubmit, setQuery, usersOnly, intentMode, results, scope, guestGated, askGate]);
 
   // Skills → Explore by → an item: the matching professionals, in Match.
   const handleExplore = (entry: ExploreByItem) => {
+    if (guestGated) { askGate(); return; }
     setOpen(false);
     onOpenChange?.(false);
     setQuery("");
@@ -544,6 +589,7 @@ export function UnifiedSearchDropdown({
   const handleSeeAll = (target: SearchIntent) => {
     const words = query.trim();
     if (!words) return;
+    if (guestGated) { askGate(); return; }
     setOpen(false);
     onOpenChange?.(false);
     setQuery("");
@@ -554,6 +600,7 @@ export function UnifiedSearchDropdown({
   const handleSeeAllScope = (target: SearchScope) => {
     const words = query.trim();
     if (!words) return;
+    if (guestGated) { askGate(); return; }
     setOpen(false);
     onOpenChange?.(false);
     setQuery("");
@@ -639,53 +686,43 @@ export function UnifiedSearchDropdown({
 
   return (
     <div ref={wrapperRef} className={cn("relative", className)}>
+      {scope ? (
+        // The topics: compact labels on the bar, All first. They say where the words are looked for; they are not tabs or pages.
+        <div role="radiogroup" aria-label="Search topic" ref={pillsRef} className="mb-2.5 flex justify-center">
+          <div className="inline-flex max-w-full items-center gap-0.5 overflow-x-auto rounded-full border border-border bg-card/60 p-0.5 backdrop-blur-sm [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {topics.map((id, index) => {
+              const selected = id === scope;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  tabIndex={selected ? 0 : -1}
+                  data-scope-pill={id}
+                  disabled={disabled}
+                  onClick={() => changeScope(id)}
+                  onKeyDown={(e) => handleTopicKeyDown(e, index)}
+                  className={cn(
+                    "inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-full px-3.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/50 sm:px-4",
+                    selected ? "bg-background text-foreground shadow-sm ring-1 ring-border" : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {searchScopeMeta(id).label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
       <form onSubmit={handleSubmit}>
         <div className={cn("group relative", isHero && "k-search-hero")}>
-          {scope ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  disabled={disabled}
-                  aria-label={`Search scope: ${searchScopeMeta(scope).label}. Change scope`}
-                  data-scope-trigger
-                  className="absolute left-2 top-1/2 z-[2] flex h-10 -translate-y-1/2 items-center gap-1.5 rounded-[8px] bg-foreground/[0.06] px-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-foreground/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 data-[state=open]:bg-foreground/[0.12] sm:h-11 sm:w-[8.5rem] sm:justify-between sm:px-3"
-                >
-                  {(() => {
-                    const ScopeIcon = SCOPE_ICON[scope];
-                    return <ScopeIcon className="h-4 w-4 shrink-0 text-muted-foreground sm:hidden" aria-hidden />;
-                  })()}
-                  <span className="hidden truncate sm:inline">{searchScopeMeta(scope).label}</span>
-                  <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" sideOffset={8} className="z-[120] w-[min(18rem,calc(100vw-2.5rem))] rounded-xl p-1.5">
-                <DropdownMenuRadioGroup value={scope} onValueChange={changeScope}>
-                  {SEARCH_SCOPES.map((meta) => {
-                    const ScopeIcon = SCOPE_ICON[meta.id];
-                    return (
-                      <DropdownMenuRadioItem key={meta.id} value={meta.id} className="gap-3 rounded-lg py-2 pl-3 pr-8 [&>span:first-child]:left-auto [&>span:first-child]:right-2.5">
-                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 text-foreground/80">
-                          <ScopeIcon className="h-3.5 w-3.5" aria-hidden />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block text-sm font-medium text-foreground">{meta.label}</span>
-                          <span className="block truncate text-[11px] text-muted-foreground">{meta.description}</span>
-                        </span>
-                      </DropdownMenuRadioItem>
-                    );
-                  })}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <Search
-              className={cn(
-                "absolute top-1/2 -translate-y-1/2 text-muted-foreground",
-                isHero ? "left-5 h-5 w-5 transition-colors group-focus-within:text-foreground" : "left-3 h-4 w-4"
-              )}
-            />
-          )}
+          <Search
+            className={cn(
+              "absolute top-1/2 -translate-y-1/2 text-muted-foreground",
+              isHero ? "left-5 h-5 w-5 transition-colors group-focus-within:text-foreground" : "left-3 h-4 w-4"
+            )}
+          />
           <input
             ref={inputRef}
             type="text"
@@ -712,7 +749,7 @@ export function UnifiedSearchDropdown({
             disabled={disabled}
             enterKeyHint="search"
             role="combobox"
-            aria-label={usersOnly ? "Search Kretopia users" : scope ? `Search ${scope === "all" ? "Kretopia" : searchScopeMeta(scope).label}` : intentMode ? "Search people, skills or opportunities" : "Search a name, project or opportunity"}
+            aria-label={usersOnly ? "Search Kretopia users" : scope ? `Search ${scope === "all" ? "creatives, skills or opportunities" : searchScopeMeta(scope).label}` : intentMode ? "Search people, skills or opportunities" : "Search a name, project or opportunity"}
             aria-expanded={open}
             aria-controls={listboxId}
             className={cn(
@@ -722,7 +759,7 @@ export function UnifiedSearchDropdown({
                 // field's own border stays invisible and its box never changes on focus.
                 ? cn(
                     "h-14 sm:h-16 rounded-[var(--k-hero-radius)] border-transparent bg-card/90 backdrop-blur-sm text-base shadow-lg placeholder:text-[13px] sm:placeholder:text-base placeholder:text-muted-foreground/70 focus:border-transparent",
-                    scope ? "pl-[4.75rem] pr-[7.5rem] sm:pl-[10.25rem] sm:pr-[8.5rem]" : "pl-12 pr-[5.75rem] sm:pl-14 sm:pr-24",
+                    scope ? "text-ellipsis pl-12 pr-[7.5rem] sm:pl-14 sm:pr-[11.25rem]" : "pl-12 pr-[5.75rem] sm:pl-14 sm:pr-24",
                   )
                 : isNavbar
                 ? "h-9 rounded-xl border-border bg-muted/40 pl-9 pr-8 text-sm focus:border-primary/50 focus:bg-card"
@@ -774,7 +811,7 @@ export function UnifiedSearchDropdown({
                   aria-label="Clear search"
                   className={cn(
                     "absolute top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors before:absolute before:-inset-2.5 before:content-['']",
-                    isHero ? (scope ? "right-[6.25rem] sm:right-[6.9rem]" : "right-[3.75rem] sm:right-[4.25rem]") : "right-8"
+                    isHero ? (scope ? "right-[6.25rem] sm:right-[9.6rem]" : "right-[3.75rem] sm:right-[4.25rem]") : "right-8"
                   )}
                 >
                   <X className="h-3.5 w-3.5" />
@@ -789,7 +826,7 @@ export function UnifiedSearchDropdown({
                   title="Search by voice"
                   className={cn(
                     "k-mic-button absolute top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center transition-all disabled:opacity-50 before:absolute before:-inset-1.5 before:content-['']",
-                    isHero ? "right-[3.75rem] sm:right-[4.25rem] rounded-[8px]" : "right-6 rounded-full"
+                    isHero ? (scope ? "right-[3.75rem] sm:right-[7.1rem] rounded-[8px]" : "right-[3.75rem] sm:right-[4.25rem] rounded-[8px]") : "right-6 rounded-full"
                   )}
                 >
                   {voice.status === "requesting" ? (
@@ -805,11 +842,19 @@ export function UnifiedSearchDropdown({
                 className={cn(
                   "absolute top-1/2 -translate-y-1/2 flex items-center justify-center transition-colors",
                   isHero
-                    ? "right-2.5 h-10 w-10 sm:h-11 sm:w-11 rounded-[8px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    ? cn(
+                        "right-2.5 h-10 rounded-[8px] bg-primary text-primary-foreground hover:bg-primary/90 shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        scope ? "w-10 sm:h-11 sm:w-auto sm:px-5 sm:text-sm sm:font-semibold" : "w-10 sm:h-11 sm:w-11",
+                      )
                     : "right-1.5 h-7 w-7 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted/80"
                 )}
               >
-                {isHero ? <ArrowRight className="h-4 w-4" /> : <ArrowRight className="h-3.5 w-3.5" />}
+                {scope ? (
+                  <>
+                    <ArrowRight className="h-4 w-4 sm:hidden" />
+                    <span className="hidden sm:inline">Search</span>
+                  </>
+                ) : isHero ? <ArrowRight className="h-4 w-4" /> : <ArrowRight className="h-3.5 w-3.5" />}
               </button>
             </>
           )}
@@ -854,13 +899,14 @@ export function UnifiedSearchDropdown({
           )}
         >
           <div ref={resultsRef} className="flex flex-col overflow-y-auto max-h-[inherit]">
-            {intentMode ? (
+            {intentMode ? (<>
               <HeroIntentPanel
                 query={query}
                 people={results.filter((r) => r.type === "creator") as IntentResult[]}
                 opportunities={results.filter((r) => r.type === "gig") as IntentResult[]}
                 events={results.filter((r) => r.type === "event") as IntentResult[]}
                 scope={scope}
+                locked={guestGated}
                 onSeeAllScope={handleSeeAllScope}
                 loading={loading}
                 error={error}
@@ -872,7 +918,25 @@ export function UnifiedSearchDropdown({
                 onSeeAll={handleSeeAll}
                 onRetry={() => doSearch(query.trim())}
               />
-            ) : (<>
+              {guestGated && (gateAsked || (query.trim() !== "" && (results.length > 0 || (!!scope && scopeSources(scope).skills && searchExploreBy(query.trim(), 1).length > 0)))) ? (
+                // For a guest: results exist, and none opens without an account. Quiet, in the panel, never a wall.
+                <div data-search-gate role="status" className="order-first border-b border-border bg-muted/30 px-4 py-3 text-left">
+                  <p className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
+                    Sign up free to view full results.
+                  </p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Your topic and search are kept for when you come back.</p>
+                  <div className="mt-2.5 flex items-center gap-2">
+                    <Button ref={gateRef} type="button" size="sm" data-search-result onKeyDown={handleResultKeyDown} onClick={() => goToAuth("signup")}>
+                      Sign up
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" data-search-result onKeyDown={handleResultKeyDown} onClick={() => goToAuth("signin")}>
+                      Sign in
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </>) : (<>
             {isHero && !usersOnly && <div className="order-first border-b border-border px-4 py-3 text-left"><p className="text-xs font-semibold text-foreground">Explore Kretopia</p></div>}
             {catalogMatches.length > 0 && (
               <div className={cn("border-b border-border px-2 py-3", isHero ? "order-1" : "order-3")}>

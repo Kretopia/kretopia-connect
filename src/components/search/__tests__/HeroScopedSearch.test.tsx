@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   people: vi.fn(),
   tables: vi.fn(),
+  auth: { user: null as null | { id: string }, loading: false },
 }));
 
 vi.mock("@/lib/scoutPeopleSearch", () => ({
@@ -24,13 +25,14 @@ vi.mock("@/integrations/supabase/client", () => ({
     },
   },
 }));
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: null }) }));
+vi.mock("@/hooks/useAuth", () => ({ useAuth: () => mocks.auth }));
 vi.mock("@/hooks/useVoiceSearch", () => ({ useVoiceSearch: () => ({ supported: true, status: "idle", start: vi.fn() }) }));
 vi.mock("@/lib/analytics", () => ({ analytics: { featureUsed: vi.fn() } }));
 
+import { useState } from "react";
 import { UnifiedSearchDropdown } from "../UnifiedSearchDropdown";
 import { analytics } from "@/lib/analytics";
-import type { SearchScope } from "@/lib/heroSearchScope";
+import { HERO_TOPICS, type SearchScope } from "@/lib/heroSearchScope";
 
 function Where() {
   const l = useLocation();
@@ -60,9 +62,13 @@ beforeEach(() => {
   mocks.people.mockResolvedValue({ users: [], hasMore: false });
   mocks.tables.mockImplementation((table: string) => ({ data: table === "opportunities" ? [] : [], error: null }));
   vi.mocked(analytics.featureUsed).mockClear();
+  // A member by default: navigation tests. Guests have their own describe below.
+  mocks.auth.user = { id: "u1" };
+  mocks.auth.loading = false;
+  sessionStorage.clear();
 });
 
-describe("hero search with a scope", () => {
+describe("hero search with a scope (signed in)", () => {
   it("under All it asks people, opportunities and events together and shows each in its own section", async () => {
     mocks.people.mockResolvedValue({ users: [ada], hasMore: false });
     mocks.tables.mockImplementation((table: string) => ({ data: table === "opportunities" ? [gig] : [jam], error: null }));
@@ -164,5 +170,126 @@ describe("hero search with a scope", () => {
       </MemoryRouter>,
     );
     expect(document.querySelector("[data-scope-trigger]")).toBeNull();
+  });
+});
+
+const TopicsHarness = ({ initial = "all" as SearchScope }) => {
+  const [scope, setScope] = useState<SearchScope>(initial);
+  return (
+    <MemoryRouter>
+      <UnifiedSearchDropdown variant="hero" intentSearch scopeSearch scopes={HERO_TOPICS} scope={scope} onScopeChange={setScope} />
+      <Where />
+    </MemoryRouter>
+  );
+};
+const pill = (id: string) => document.querySelector(`[data-scope-pill="${id}"]`) as HTMLElement;
+
+describe("hero search topic labels", () => {
+  it("shows All, Scouts, People and Match as compact radios on the bar, All selected", () => {
+    render(<TopicsHarness />);
+    const group = screen.getByRole("radiogroup", { name: "Search topic" });
+    const radios = Array.from(group.querySelectorAll('[role="radio"]'));
+    expect(radios.map((r) => r.textContent)).toEqual(["All", "Scouts", "People", "Match"]);
+    expect(pill("all")).toHaveAttribute("aria-checked", "true");
+    expect(pill("scout")).toHaveAttribute("aria-checked", "false");
+    // Labels, not tabs, cards or pages.
+    expect(screen.queryByRole("tab")).toBeNull();
+    expect(document.querySelector("[data-scope-trigger]")).toBeNull();
+  });
+
+  it("choosing a topic selects it and keeps the words typed", () => {
+    render(<TopicsHarness />);
+    type("film");
+    fireEvent.click(pill("people"));
+    expect(pill("people")).toHaveAttribute("aria-checked", "true");
+    expect(pill("all")).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("combobox")).toHaveValue("film");
+  });
+
+  it("the arrow keys move between topics, with one stop in the tab order", () => {
+    render(<TopicsHarness />);
+    expect(pill("all")).toHaveAttribute("tabindex", "0");
+    expect(pill("people")).toHaveAttribute("tabindex", "-1");
+    fireEvent.keyDown(pill("all"), { key: "ArrowRight" });
+    expect(pill("scout")).toHaveAttribute("aria-checked", "true");
+    fireEvent.keyDown(pill("scout"), { key: "ArrowLeft" });
+    fireEvent.keyDown(pill("all"), { key: "ArrowLeft" });
+    expect(pill("match")).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("answers inside the one results panel, for every topic", async () => {
+    mocks.tables.mockResolvedValue({ data: [gig], error: null });
+    render(<TopicsHarness initial="scout" />);
+    type("film");
+    await waitFor(() => expect(results()).toHaveTextContent("Film editor"));
+    expect(screen.getAllByRole("region", { name: "Search results" })).toHaveLength(1);
+  });
+});
+
+describe("hero search for a guest", () => {
+  beforeEach(() => {
+    mocks.auth.user = null;
+  });
+
+  it("sees that results exist, each marked as needing an account, with one quiet sign-up prompt", async () => {
+    mocks.people.mockResolvedValue({ users: [ada], hasMore: false });
+    render(<TopicsHarness initial="people" />);
+    type("ada");
+    await waitFor(() => expect(results()).toHaveTextContent("Ada Lovelace"));
+    expect(screen.getAllByLabelText("Needs an account").length).toBeGreaterThan(0);
+    const gate = results().querySelector("[data-search-gate]") as HTMLElement;
+    expect(gate).toHaveTextContent("Sign up free to view full results.");
+    expect(gate.querySelectorAll("button")).toHaveLength(2);
+  });
+
+  it("opens nothing: a result, Enter and the Search button keep the guest on the page and bring up the prompt", async () => {
+    mocks.people.mockResolvedValue({ users: [ada], hasMore: false });
+    render(<TopicsHarness initial="people" />);
+    type("ada");
+    fireEvent.click(await screen.findByRole("button", { name: /Ada Lovelace/ }));
+    expect(where()).toBe("/");
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(where()).toBe("/");
+    fireEvent.click(screen.getByRole("button", { name: /See everyone for/ }));
+    expect(where()).toBe("/");
+    expect(results().querySelector("[data-search-gate]")).not.toBeNull();
+  });
+
+  it("shows no prompt while nothing was found, and does not claim content that is not there", async () => {
+    render(<TopicsHarness initial="scout" />);
+    type("zzzz");
+    await waitFor(() => expect(results()).toHaveTextContent("Nothing matches"));
+    expect(results().querySelector("[data-search-gate]")).toBeNull();
+  });
+
+  it("Sign up keeps the topic and the words for the app's own post-auth return", async () => {
+    mocks.tables.mockResolvedValue({ data: [gig], error: null });
+    render(<TopicsHarness initial="scout" />);
+    type("film");
+    await waitFor(() => expect(results()).toHaveTextContent("Film editor"));
+    fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
+    expect(where()).toBe("/auth?tab=signup");
+    expect(sessionStorage.getItem("thrivein_post_auth_redirect")).toBe("/scout?q=film");
+  });
+
+  it("Sign in keeps them the same way, and People and Match return to the Grid with the words", async () => {
+    mocks.people.mockResolvedValue({ users: [ada], hasMore: false });
+    render(<TopicsHarness initial="people" />);
+    type("ada");
+    await waitFor(() => expect(results()).toHaveTextContent("Ada Lovelace"));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+    expect(where()).toBe("/auth?tab=signin");
+    expect(sessionStorage.getItem("thrivein_post_auth_redirect")).toBe("/match?tab=browse&view=grid&q=ada");
+  });
+
+  it("a member is never asked: the same search opens its page", async () => {
+    mocks.auth.user = { id: "u1" };
+    mocks.tables.mockResolvedValue({ data: [gig], error: null });
+    render(<TopicsHarness initial="scout" />);
+    type("film");
+    await waitFor(() => expect(results()).toHaveTextContent("Film editor"));
+    expect(results().querySelector("[data-search-gate]")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Search" }));
+    expect(where()).toBe("/scout?q=film");
   });
 });

@@ -1,10 +1,14 @@
 /**
  * KretopiaHero — Section 1 of the Kretopia landing page.
  *
- * v14: "One search". The journeys and the three actions under the search are gone: the search is the entry point. A scope at the
- * start of the field (All by default, then People, Scout, Match, Events, SoundStages) says where the words are looked for; the scope
- * travels with the query (see heroSearchScope.ts), the field keeps its microphone, a clear button and the submit button, and one
- * line under it says you can search everywhere or narrow it. Choosing People, Match or Scout tints the horizon.
+ * v15: "Topics". The search bar is the one interaction and says what can be searched with compact topic labels on the bar: All
+ * (default), Scouts, People, Match. The topic travels with the words (heroSearchScope.ts) and every topic answers inside the one
+ * results panel of UnifiedSearchDropdown; a guest sees that results exist and signs up to open them (the topic and the words come
+ * back through the app's post-auth return). Copy is exactly: eyebrow, "Find Your People." (the shared .k-gradient-text, unmodified),
+ * subheading, one supporting line, "Create your free Passport", "Hiring? Post an opportunity free." Choosing Scouts, People or
+ * Match tints the horizon.
+ *
+ * v14: "One search". The journeys and the three actions under the search were removed: the search became the entry point.
  *
  * v13: "Twilight". The planet lost its orbit and satellites and gained a real dusk: a horizon band and atmosphere whose colour
  * cools with height along the logo's own gradient (orange, magenta, violet, blue), a low sun that drifts along a softly lit limb,
@@ -74,16 +78,18 @@
  * Its own padding preserves the gradient's glyph edges.
  */
 import { memo, useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
+import { Link } from "react-router-dom";
 import { motion, useMotionValue, useScroll, useSpring, useTransform, type MotionValue } from "framer-motion";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
 import { analytics } from "@/lib/analytics";
 import { trackLandingCta } from "@/lib/landingFunnel";
 import { BrandLogo } from "@/components/BrandLogo";
 import { UnifiedSearchDropdown } from "@/components/search/UnifiedSearchDropdown";
+import { GlassCta } from "@/components/ui/glass-cta";
 import { HeroUniverse, type HeroTint } from "@/components/landing/kretopia/HeroUniverse";
 import { HeroPromptRotator } from "@/components/landing/kretopia/HeroPromptRotator";
 import type { HeroPrompt } from "@/lib/heroJourneys";
-import { DEFAULT_SEARCH_SCOPE, HERO_SEARCH_GUIDANCE, scopePlaceholder, type SearchScope } from "@/lib/heroSearchScope";
+import { DEFAULT_SEARCH_SCOPE, HERO_TOPICS, HERO_TOPIC_PLACEHOLDER, type SearchScope } from "@/lib/heroSearchScope";
 // HD artwork imported through Vite: hashed URL in production, no hand-written path to maintain.
 // Both files are well over 4 KB, so never inlined as base64.
 import kretoBodyUrl from "@/assets/brand/kreto/hero-wave-hd-body.webp";
@@ -301,11 +307,11 @@ const KretoWave = memo(function KretoWave({
 const RISE_EASE = [0.2, 0.65, 0.3, 0.95] as const;
 
 /** The mouse or trackpad kind of pointer: the only one the background drifts against. */
-const isNarrowViewport = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(max-width: 639px)").matches;
 const hasFinePointer = () => typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
 /** The headline's coloured word: the logo gradient, swept slowly across it (still under reduced motion). */
-const SHIMMER_STYLE: CSSProperties = { marginLeft: "-0.16em", backgroundSize: "220% 100%", backgroundPosition: "0% 50%" };
+/** The shared .k-gradient-text pads its inline box for the clip; this pulls the word back so it sits flush with "Your". */
+const GRADIENT_WORD_STYLE: CSSProperties = { marginLeft: "-0.16em" };
 
 export const KretopiaHero = () => {
   const reducedMotion = useReducedMotion();
@@ -314,7 +320,6 @@ export const KretopiaHero = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [finePointer, setFinePointer] = useState(false);
-  const [narrow, setNarrow] = useState(isNarrowViewport);
   /** Where the search looks: All by default, or one area. The horizon above the planet takes the colour of People, Match and Scout. */
   const [scope, setScope] = useState<SearchScope>(DEFAULT_SEARCH_SCOPE);
   const tint: HeroTint | null = scope === "people" ? "people" : scope === "match" ? "skills" : scope === "scout" ? "opportunities" : null;
@@ -341,11 +346,6 @@ export const KretopiaHero = () => {
 
   useEffect(() => {
     setFinePointer(hasFinePointer());
-    if (typeof window.matchMedia !== "function") return;
-    const mq = window.matchMedia("(max-width: 639px)");
-    const onChange = () => setNarrow(mq.matches);
-    mq.addEventListener?.("change", onChange);
-    return () => mq.removeEventListener?.("change", onChange);
   }, []);
 
   useEffect(() => {
@@ -403,7 +403,7 @@ export const KretopiaHero = () => {
         <HeroUniverse reducedMotion={reducedMotion} pointerX={smoothX} pointerY={smoothY} scroll={scrollYProgress} parallax={finePointer} energized={searchFocused} tint={tint} />
       </div>
 
-      <div className="relative z-[1] mx-auto flex w-full max-w-[1100px] flex-col items-center px-5 pb-36 pt-8 text-center sm:px-8 sm:pb-32 sm:pt-10 lg:px-12">
+      <div className="relative z-[1] mx-auto flex w-full max-w-[1100px] flex-col items-center px-5 pb-32 pt-8 text-center sm:px-8 sm:pb-40 sm:pt-10 lg:px-12">
         {/* The mark and the tagline on one line: the brand first, then the headline. */}
         <motion.div {...rise(0)} className="mb-4 flex items-center justify-center gap-3">
           <BrandLogo iconOnly size="sm" />
@@ -412,35 +412,32 @@ export const KretopiaHero = () => {
         </motion.div>
 
         {/* "People." wears the logo gradient through the shared .k-gradient-text, which carries the clipping slack
-            (inline padding, box-decoration-break) a gradient word needs, and a slow sweep of the gradient across it.
-            One line from `sm`; it wraps on a phone. */}
+            (inline padding, box-decoration-break) a gradient word needs: the same gradient as every other headline on the page,
+            unmodified. One line from `sm`; it wraps on a phone. */}
         <div className="max-w-full">
           <h1
             aria-label="Find Your People."
             className="landing-h1 landing-glow mx-auto max-w-full font-bold sm:whitespace-nowrap"
             style={{ lineHeight: 1.08, letterSpacing: "-0.035em", fontSize: "clamp(2.5rem, 11vw, 5.5rem)" }}
           >
-            {/* Two words come in one after the other, each rising out of a soft blur; the sweep on "People." starts afterwards. */}
+            {/* Two words come in one after the other, each rising out of a soft blur. */}
             <motion.span aria-hidden className="inline-block" {...word(0.1)}>
               Find Your
             </motion.span>{" "}
             <motion.span aria-hidden className="inline-block" {...word(0.34)}>
-              <span
-                className="k-gradient-text"
-                style={{ ...SHIMMER_STYLE, animation: reducedMotion ? "none" : "k-shimmer 10s ease-in-out 1.6s infinite" }}
-              >
+              <span className="k-gradient-text" style={GRADIENT_WORD_STYLE}>
                 People.
               </span>
             </motion.span>
           </h1>
         </div>
 
-        <motion.p {...rise(0.18)} className="landing-sub mx-auto mt-4 max-w-xl">
-          Discover people, skills and opportunities across the creative economy.
+        <motion.p {...rise(0.18)} className="landing-sub mx-auto mt-4 max-w-2xl">
+          Find paid work, meet collaborators and hire creative talent for your next project.
         </motion.p>
 
-        {/* The search is the app's real UnifiedSearchDropdown: one field, a scope at its start (All by default), the microphone, a
-            clear button and the submit button. Its results, routing and accessibility are the component's own. */}
+        {/* The search is the app's real UnifiedSearchDropdown: compact topic labels on the bar (All by default), the microphone, a clear
+            button and "Search". Every topic answers inside its one results panel; a guest sees that results exist and signs up to open them. */}
         <motion.div
           {...rise(0.3)}
           className="relative mt-7 w-full max-w-[48rem] sm:mt-8"
@@ -451,17 +448,41 @@ export const KretopiaHero = () => {
             variant="hero"
             intentSearch
             scopeSearch
+            scopes={HERO_TOPICS}
             scope={scope}
             onScopeChange={setScope}
-            placeholder={scopePlaceholder(scope, narrow)}
+            placeholder={HERO_TOPIC_PLACEHOLDER}
             value={query}
             onValueChange={setQuery}
             onOpenChange={setSearchOpen}
           />
-          <p className="mt-3 text-xs text-muted-foreground sm:text-[13px]">{HERO_SEARCH_GUIDANCE}</p>
-          <div className="mt-1.5">
+          <div className="mt-3">
             <HeroPromptRotator reducedMotion={reducedMotion} paused={searchOpen || searchFocused} onPick={pickPrompt} />
           </div>
+        </motion.div>
+
+        <motion.p {...rise(0.42)} className="mt-5 max-w-xl text-sm text-muted-foreground [text-shadow:0_0_14px_hsl(var(--background)/0.9)] sm:text-[0.9375rem]">
+          Your work, experience and creative credits. One shareable profile.
+        </motion.p>
+
+        <motion.div {...rise(0.5)} className="mt-5 flex flex-col items-center gap-3">
+          <GlassCta
+            to="/auth?tab=signup"
+            size="md"
+            data-cta="primary"
+            className="k-cta-future"
+            onClick={() => trackLandingCta("hero_create_passport", "hero", { label: "Create your free Passport" })}
+          >
+            Create your free Passport
+          </GlassCta>
+          <Link
+            to="/post-opportunity"
+            data-cta="company"
+            onClick={() => trackLandingCta("hero_post_opportunity", "hero", { label: "Hiring? Post an opportunity free." })}
+            className="rounded text-sm text-muted-foreground [text-shadow:0_0_14px_hsl(var(--background)/0.9)] underline-offset-4 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-foreground/50"
+          >
+            Hiring? Post an opportunity free.
+          </Link>
         </motion.div>
       </div>
 

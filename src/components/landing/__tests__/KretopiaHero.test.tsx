@@ -63,66 +63,82 @@ describe("KretopiaHero — Kreto Universe", () => {
     vi.useRealTimers();
   });
 
-  it("says it in order: eyebrow, 'Find Your People.', one supporting line", () => {
+  it("says it in order: eyebrow, 'Find Your People.', subheading, search, supporting line, one CTA, one company link", () => {
     renderHero();
     expect(screen.getByText("The Creative Economy OS")).toBeInTheDocument();
     const h1 = screen.getAllByRole("heading", { level: 1 });
     expect(h1).toHaveLength(1);
     expect(h1[0].textContent).toBe("Find Your People.");
     expect(h1[0]).toHaveAttribute("aria-label", "Find Your People.");
-    expect(h1[0].querySelector(".k-gradient-text")).toHaveTextContent("People.");
-    const sub = screen.getByText("Discover people, skills and opportunities across the creative economy.");
-    expect(h1[0].compareDocumentPosition(sub) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const sub = screen.getByText("Find paid work, meet collaborators and hire creative talent for your next project.");
+    const field = screen.getByRole("combobox");
+    const support = screen.getByText("Your work, experience and creative credits. One shareable profile.");
+    const cta = screen.getByRole("link", { name: "Create your free Passport" });
+    const company = screen.getByRole("link", { name: "Hiring? Post an opportunity free." });
+    const follows = (a: Node, b: Node) => !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(follows(h1[0], sub)).toBe(true);
+    expect(follows(sub, field)).toBe(true);
+    expect(follows(field, support)).toBe(true);
+    expect(follows(support, cta)).toBe(true);
+    expect(follows(cta, company)).toBe(true);
   });
 
-  it("keeps the app's own search as the one thing to do, with All as its default scope", () => {
+  it("'People.' wears the page's own gradient class, with nothing of its own added to the gradient", () => {
+    renderHero();
+    const word = screen.getByRole("heading", { level: 1 }).querySelector(".k-gradient-text") as HTMLElement;
+    expect(word).toHaveTextContent("People.");
+    const style = word.getAttribute("style") ?? "";
+    for (const own of ["gradient", "background", "animation"]) expect(style).not.toContain(own);
+  });
+
+  it("the CTA and the company link go to the sign-up and to Post an opportunity, one analytics event each", () => {
+    renderHero();
+    const cta = screen.getByRole("link", { name: "Create your free Passport" });
+    expect(cta).toHaveAttribute("href", "/auth?tab=signup");
+    fireEvent.click(cta);
+    expect(trackLandingCta).toHaveBeenLastCalledWith("hero_create_passport", "hero", { label: "Create your free Passport" });
+    const company = screen.getByRole("link", { name: "Hiring? Post an opportunity free." });
+    expect(company).toHaveAttribute("href", "/post-opportunity");
+    fireEvent.click(company);
+    expect(trackLandingCta).toHaveBeenLastCalledWith("hero_post_opportunity", "hero", { label: "Hiring? Post an opportunity free." });
+    expect(trackLandingCta).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the app's own search with the requested placeholder and a Search button", () => {
     renderHero();
     const field = screen.getByRole("combobox");
-    expect(field).toHaveAttribute("placeholder", "Search people, skills, opportunities and events");
+    expect(field).toHaveAttribute("placeholder", "Search creatives, skills or opportunities…");
     expect(field.className).toContain("rounded-[var(--k-hero-radius)]");
     expect(field.closest(".k-search-hero")).not.toBeNull();
-    expect(screen.queryByRole("tab")).toBeNull();
-    // The scope sits at the start of the field and says All.
-    const trigger = scopeTrigger();
-    expect(trigger).toHaveTextContent("All");
-    expect(field.closest(".k-search-hero")?.contains(trigger)).toBe(true);
+    const submit = field.closest("form")?.querySelector('button[type="submit"]') as HTMLElement;
+    expect(submit).toHaveTextContent("Search");
+    expect(submit).toHaveAttribute("aria-label", "Search");
   });
 
-  it("has nothing under the search but one guidance line and the example: no journey cards, no action buttons", () => {
+  it("shows four compact topic labels on the bar, All first and selected, and nothing else about what to search", () => {
     const { container } = renderHero();
-    expect(screen.getByText("Search all of Kretopia, or narrow it to one area.")).toBeInTheDocument();
-    expect(screen.queryByRole("navigation", { name: "Start with" })).toBeNull();
-    expect(container.querySelector("[data-hero-dock], [data-cta]")).toBeNull();
+    const group = screen.getByRole("radiogroup", { name: "Search topic" });
+    const radios = Array.from(group.querySelectorAll('[role="radio"]'));
+    expect(radios.map((r) => r.textContent)).toEqual(["All", "Scouts", "People", "Match"]);
+    expect(radios[0]).toHaveAttribute("aria-checked", "true");
+    expect(radios.slice(1).every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
+    // The labels belong to the search bar: same wrapper as the field.
+    expect(group.parentElement?.contains(screen.getByRole("combobox"))).toBe(true);
+    // No events or SoundStages promotion, no cards, no explanatory paragraph under the field.
     const hero = container.querySelector("#kretopia-hero") as HTMLElement;
-    for (const name of ["Explore Kretopia", "For Creatives", "For Companies"]) {
-      expect(Array.from(hero.querySelectorAll("a")).some((a) => a.textContent?.trim() === name)).toBe(false);
-    }
+    expect(hero.textContent).not.toMatch(/SoundStages|Sound Stages|Events/);
+    expect(screen.queryByText("Search all of Kretopia, or narrow it to one area.")).toBeNull();
+    expect(container.querySelector("[data-hero-dock]")).toBeNull();
   });
 
-  it("offers All, People, Scout, Match, Events and SoundStages, and the scope changes the placeholder", async () => {
+  it("choosing a topic selects it; for a guest, Search keeps them here with the sign-up prompt and does not leave", () => {
     renderHero();
-    openScopes();
-    const items = await screen.findAllByRole("menuitemradio");
-    expect(items.map((i) => i.textContent)).toEqual([
-      expect.stringContaining("All"),
-      expect.stringContaining("People"),
-      expect.stringContaining("Scout"),
-      expect.stringContaining("Match"),
-      expect.stringContaining("Events"),
-      expect.stringContaining("SoundStages"),
-    ]);
-    fireEvent.click(screen.getByRole("menuitemradio", { name: /SoundStages/ }));
-    expect(screen.getByRole("combobox")).toHaveAttribute("placeholder", "Search SoundStages and live sessions");
-    expect(scopeTrigger()).toHaveTextContent("SoundStages");
-  });
-
-  it("sends the query with its scope: submitting opens the scope's own page with the words", async () => {
-    renderHero();
-    openScopes();
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: /SoundStages/ }));
-    fireEvent.change(screen.getByRole("combobox"), { target: { value: "electronic music" } });
+    fireEvent.click(document.querySelector('[data-scope-pill="scout"]') as HTMLElement);
+    expect(document.querySelector('[data-scope-pill="scout"]')).toHaveAttribute("aria-checked", "true");
+    fireEvent.change(screen.getByRole("combobox"), { target: { value: "photographer" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(screen.getByTestId("where").textContent).toBe("/soundstages?q=electronic%20music");
+    expect(screen.getByTestId("where").textContent).toBe("/");
+    expect(screen.getByText("Sign up free to view full results.")).toBeInTheDocument();
   });
 
   it("keeps the microphone, the clear button and the submit button; clear empties the field", () => {
@@ -135,15 +151,13 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(field).toHaveValue("");
   });
 
-  it("tints the sky when the search is narrowed to People, Match or Scout, and clears it for All", async () => {
+  it("tints the sky when the search is narrowed to Scouts, People or Match, and clears it for All", () => {
     const { container } = renderHero();
     const sky = container.querySelector("[data-universe]") as HTMLElement;
     expect(sky).not.toHaveAttribute("data-tint");
-    openScopes();
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: /Scout/ }));
+    fireEvent.click(document.querySelector('[data-scope-pill="scout"]') as HTMLElement);
     expect(sky).toHaveAttribute("data-tint", "opportunities");
-    openScopes();
-    fireEvent.click(await screen.findByRole("menuitemradio", { name: /^All/ }));
+    fireEvent.click(document.querySelector('[data-scope-pill="all"]') as HTMLElement);
     expect(sky).not.toHaveAttribute("data-tint");
   });
 
@@ -203,7 +217,7 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(container.querySelector("[data-universe] [style*='animation']")).toBeNull();
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toBeInTheDocument();
-    expect(screen.getByText("Search all of Kretopia, or narrow it to one area.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Create your free Passport" })).toBeInTheDocument();
     // Pointer handlers must be safe no-ops under reduced motion.
     const section = screen.getByRole("heading", { level: 1 }).closest("section");
     if (!section) throw new Error("Hero section missing");
