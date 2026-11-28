@@ -12,7 +12,7 @@ export default function PaymentSuccess() {
   const navigate = useNavigate();
   const [verifying, setVerifying] = useState(true);
   const [tier, setTier] = useState<string>("");
-  // Coming back from Stripe is not a confirmed payment: the page says "active" only once verification succeeded.
+  // Coming back from checkout is not a confirmed payment: the page says "active" only once verification succeeded.
   const [outcome, setOutcome] = useState<SubscriptionReturn>("unconfirmed");
   const [attempt, setAttempt] = useState(0);
   const isFounder = searchParams.get("type") === "founder";
@@ -48,7 +48,7 @@ export default function PaymentSuccess() {
           }
         } else {
           // Regular subscription sync
-          console.log('[PaymentSuccess] Syncing subscription with Stripe...');
+          console.log('[PaymentSuccess] Syncing subscription status...');
           const { data: syncData, error: syncError } = await supabase.functions.invoke("check-subscription");
           if (syncError) {
             verificationFailed = true;
@@ -110,7 +110,7 @@ export default function PaymentSuccess() {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">We could not confirm your payment yet</CardTitle>
             <CardDescription className="text-base mt-2">
-              Coming back from checkout does not confirm a payment. Your plan has not changed, and it updates once Stripe confirms.
+              Coming back from checkout does not confirm a payment. Your plan has not changed yet. It updates as soon as your payment provider confirms the payment, usually within a minute.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">

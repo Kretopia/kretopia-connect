@@ -25,6 +25,8 @@ import { GlassCta, GlassCtaButton, OutlineCtaButton } from "@/components/ui/glas
 import { EditorialFooter } from "@/components/landing/kretopia/EditorialFooter";
 import { KretopiaIcon } from "@/components/pricing/KretopiaIcon";
 import { CREATIVE_COPY, COMPANY_OPTIONS, CREATIVE_GUIDANCE, COMPANY_BENEFITS, CREATIVE_FAQS, COMPANY_FAQS } from "@/components/pricing/pricingContent";
+import { isPaddleCheckout } from "@/lib/paddleClient";
+import { billingNotice, canManageBilling } from "@/lib/billingStatus";
 import "./Subscription.css";
 
 const money = (value: number, decimals = 0) => new Intl.NumberFormat("en-US", {
@@ -138,7 +140,11 @@ export default function Subscription({ publicPricing = false }: { publicPricing?
         body: { tier, interval: billingInterval },
       });
       if (error) throw error;
-      if (data?.url) window.open(data.url, "_blank");
+      if (isPaddleCheckout(data)) {
+        // Paddle: the server created the transaction; the plan changes only when Paddle's signed webhook confirms it.
+        const { openPaddleCheckout } = await import("@/lib/paddleClient");
+        await openPaddleCheckout(data);
+      } else if (data?.url) window.open(data.url, "_blank");
     } catch (error: any) {
       toast({ title: "Error", description: error.message || "Failed to create checkout session", variant: "destructive" });
     } finally {
@@ -250,7 +256,16 @@ export default function Subscription({ publicPricing = false }: { publicPricing?
       />
 
       <StudioFeatureShell>
-        {hasPaidSub && <div className="flex justify-end"><OutlineCtaButton onClick={handleManageSubscription} disabled={loading !== null}>{loading === "portal" ? <KretopiaSpinner className="h-4 w-4" /> : "Manage Subscription"}</OutlineCtaButton></div>}
+        {!publicPricing && subscriptionVerified && !isFounder && (() => {
+          const notice = billingNotice(subscriptionStatus);
+          return notice ? (
+            <div role={notice.tone === "warn" ? "alert" : "status"} className={`rounded-lg border p-4 text-sm ${notice.tone === "warn" ? "border-destructive/50 bg-destructive/10" : "border-border bg-muted/40"}`}>
+              <p className="font-semibold">{notice.title}</p>
+              <p className="mt-1 text-muted-foreground">{notice.body}</p>
+            </div>
+          ) : null;
+        })()}
+        {!publicPricing && subscriptionVerified && !isFounder && canManageBilling(subscriptionStatus) && <div className="flex justify-end"><OutlineCtaButton onClick={handleManageSubscription} disabled={loading !== null}>{loading === "portal" ? <KretopiaSpinner className="h-4 w-4" /> : "Manage Subscription"}</OutlineCtaButton></div>}
 
         <section className="k-pricing__section" aria-labelledby="pricing-options-title">
           <div className="mb-8 max-w-3xl">
@@ -366,6 +381,9 @@ export default function Subscription({ publicPricing = false }: { publicPricing?
           <div className="k-pricing__body">{company ? <p>Discover the perspectives, experience, and creative talent that can bring your ideas to life.</p> : <><p>The next opportunity, the next collaboration, the next idea.</p><p>Find the tools that help you move forward.</p></>}</div>
           <GlassCta className="mt-6 min-h-11" to={company ? "/contact" : publicPricing ? publicPlanDestination : PRICING_SIGNUP} icon={externalIcon}>{company ? "Discuss Team Requirements" : publicPricing && user && session ? "View Subscription" : "Get Started Free"}</GlassCta>
         </section>
+        <p className="border-t border-border pt-6 text-xs text-muted-foreground">
+          Subscriptions are billed by our payment provider, who handles tax and receipts. By subscribing you agree to the <a className="underline underline-offset-2" href="/terms">Terms</a> and the <a className="underline underline-offset-2" href="/privacy">Privacy Policy</a>.
+        </p>
       </StudioFeatureShell>
       <EditorialFooter variant="balanced" />
 

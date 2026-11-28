@@ -3,6 +3,7 @@ import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { resolveStripeSecretKey } from "../_shared/stripeEnv.ts";
 import { FOUNDER_PRODUCT_ID } from "../_shared/founderActivation.ts";
+import { grantsAccess } from "../_shared/paddleEntitlements.ts";
 
 
 import { corsFor } from '../_shared/guard.ts';
@@ -87,6 +88,23 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         subscribed: true, tier: 'founder',
         product_id: FOUNDER_PRODUCT_ID, subscription_end: null,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+    }
+
+    // A Paddle subscriber's plan is written only by verified Paddle webhooks. Stripe knows nothing about them, so reconciling
+    // against Stripe here would read "no customer" and downgrade a paying member to Free. Separate, best-effort read: on a backend
+    // that does not have the column yet (the legacy one until its SQL is pasted) it errors and the Stripe path runs unchanged.
+    const { data: billing } = await supabaseClient
+      .from('profiles')
+      .select('subscription_provider, subscription_product_id, subscription_end_date')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (billing?.subscription_provider === 'paddle') {
+      logStep("Paddle-managed subscription, stored state returned without a Stripe lookup");
+      return new Response(JSON.stringify({
+        subscribed: grantsAccess(profileData?.subscription_status), tier: profileData?.subscription_tier ?? 'free',
+        status: profileData?.subscription_status ?? 'none', provider: 'paddle',
+        product_id: billing.subscription_product_id ?? null, subscription_end: billing.subscription_end_date ?? null,
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
     }
 

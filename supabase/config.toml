@@ -1,3 +1,6 @@
 project_id = "czpucbhnmcudggydwxlg"
 [functions.preview-transactional-email]
 verify_jwt = false
+
+[functions.paddle-webhook]
+verify_jwt = false

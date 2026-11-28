@@ -47,3 +47,30 @@ describe("check-subscription authentication", () => {
     expect(state.profile).not.toHaveBeenCalled();
   });
 });
+
+describe("check-subscription for a Paddle-managed member", () => {
+  it("returns the webhook-written state and never reconciles against Stripe (which would downgrade them to Free)", async () => {
+    state.user = { id: "u1", email: "member@example.com" };
+    const chain = (single: unknown) => ({ select: () => ({ eq: () => ({ single: async () => single, maybeSingle: async () => single }) }) });
+    state.profile.mockImplementation(() => ({
+      select: (cols: string) => cols.includes("subscription_provider")
+        ? chain({ data: { subscription_provider: "paddle", subscription_product_id: "pro_1", subscription_end_date: "2027-01-01T00:00:00Z" } }).select()
+        : chain({ data: { subscription_tier: "pro", subscription_status: "active" } }).select(),
+    }));
+    const res = await call("Bearer test-token");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ subscribed: true, tier: "pro", status: "active", provider: "paddle", subscription_end: "2027-01-01T00:00:00Z" });
+    expect(state.stripe).not.toHaveBeenCalled();
+  });
+  it("past_due is reported as not subscribed, with its status, never as active", async () => {
+    state.user = { id: "u1", email: "member@example.com" };
+    state.profile.mockImplementation(() => ({
+      select: (cols: string) => ({ eq: () => {
+        const data = cols.includes("subscription_provider") ? { subscription_provider: "paddle" } : { subscription_tier: "pro", subscription_status: "past_due" };
+        return { single: async () => ({ data }), maybeSingle: async () => ({ data }) };
+      } }),
+    }));
+    const body = await (await call("Bearer test-token")).json();
+    expect(body).toMatchObject({ subscribed: false, status: "past_due", tier: "pro" });
+  });
+});
