@@ -6,7 +6,7 @@
 // reducer decide → write only what the decision allows. Anything that fails after the claim gives the ledger row back and answers
 // 500 so Paddle retries; an event that can never apply (stale, unknown price, unattributed) is answered 200 and logged by reason.
 
-import { claimWebhookEvent, releaseWebhookEvent } from "./webhookLedger.ts";
+import { claimPaddleEvent, releasePaddleEvent } from "./paddleLedger.ts";
 import { verifyCheckoutBinding, verifyPaddleSignature } from "./paddleSignature.ts";
 import { checkPaddleEnv, paddlePrices, type EnvSource } from "./paddleEnv.ts";
 import { decidePaddleEntitlement, type CurrentBilling, type PaddleEvent } from "./paddleEntitlements.ts";
@@ -22,7 +22,6 @@ export interface PaddleWebhookDeps {
   log?: (message: string, detail?: Record<string, unknown>) => void;
 }
 
-const LEDGER = "paddle_webhook_events";
 const PROFILE_COLUMNS = "user_id, subscription_tier, subscription_status, subscription_provider, paddle_subscription_id, subscription_event_at, stripe_customer_id";
 
 const reply = (status: number, body: string) => new Response(body, { status });
@@ -47,11 +46,7 @@ export async function handlePaddleWebhook(req: Request, deps: PaddleWebhookDeps)
   const event = verified.payload as PaddleEvent;
   if (!event || typeof event.event_id !== "string" || typeof event.event_type !== "string") return reply(400, "bad event");
 
-  const claim = await claimWebhookEvent(
-    deps.db,
-    { id: event.event_id, type: event.event_type, ...(event as unknown as Record<string, unknown>) } as { id: string; type: string },
-    LEDGER,
-  );
+  const claim = await claimPaddleEvent(deps.db, event);
   if (claim === "duplicate") return reply(200, "ok");
   if (claim === "unavailable") return reply(500, "ledger unavailable");
 
@@ -113,7 +108,7 @@ export async function handlePaddleWebhook(req: Request, deps: PaddleWebhookDeps)
     return reply(200, "ok");
   } catch (err) {
     log("handler error", { message: err instanceof Error ? err.message : String(err) });
-    if (claim === "claimed") await releaseWebhookEvent(deps.db, event.event_id, LEDGER);
+    if (claim === "claimed") await releasePaddleEvent(deps.db, event.event_id);
     return reply(500, "handler error");
   }
 }

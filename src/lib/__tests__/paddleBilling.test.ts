@@ -259,6 +259,14 @@ describe("paddle-webhook handler", () => {
     await deliver(event, { db });
     expect(state.updates).toBe(1);
   });
+  it("processes nothing and answers 500 when the ledger cannot be written, so Paddle retries", async () => {
+    const { db, state } = fakeDb(baseProfile);
+    const broken = { from: (t: string) => (t === "paddle_webhook_events" ? { insert: async () => ({ error: { code: "57014" } }), delete: () => ({ eq: async () => ({ error: null }) }) } : db.from(t)) };
+    const res = await deliver(await bound(sub()), { db: broken });
+    expect(res.status).toBe(500);
+    expect(state.updates).toBe(0);
+    expect(state.profile?.subscription_tier).toBe("free");
+  });
   it("keeps the newer state when events arrive out of order", async () => {
     const { db, state } = fakeDb(baseProfile);
     const created = await bound(sub({ event_id: "evt_a", occurred_at: iso(0) }));

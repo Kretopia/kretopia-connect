@@ -25,16 +25,49 @@ Record the ids as `PADDLE_PRICE_<TIER>_<INTERVAL>`: tier ∈ PRO, CREATOR_PRO, B
 1. Open the production SQL editor. Paste `docs/security/PADDLE_BILLING_LEGACY_PASTE.sql` (idempotent: it adds 4 nullable columns and one deny-all ledger table; it changes no row).
 2. Run the VERIFY queries at the bottom of the file. Expected: 4 columns, ledger with RLS and a deny policy, 0 client-writable columns, 0 members with a provider set.
 
-## 4. Edge functions (paste into `kretopia-app`)
-Compare each file with production's copy first (production is a hand-pasted copy and can differ); paste only if the only differences are ours.
-| Function | Change | `verify_jwt` |
-|---|---|---|
-| `paddle-webhook` | new | **off** (Paddle sends no user JWT; the signature is the auth) |
-| `create-checkout` | Paddle branch + tester list | keep current |
-| `customer-portal` | Paddle portal for Paddle members | keep current |
-| `check-subscription` | skips Stripe for Paddle members | keep current |
-Shared files these import (paste with them): `_shared/paddleApi.ts`, `paddleCheckout.ts`, `paddleEntitlements.ts`, `paddleEnv.ts`, `paddleSignature.ts`, `paddleWebhook.ts`, `webhookLedger.ts`.
-Check: `curl -i -X OPTIONS https://kwmcocsitwssrtzkdojh.supabase.co/functions/v1/paddle-webhook` returns 200. **Do not POST-probe** `paddle-webhook` (use Paddle's "send test event"). Logs show no new errors for 10 minutes.
+## 4. Edge functions (paste into `kretopia-app`) — READ THE DRIFT FINDINGS FIRST
+Production's copies are **older than `main`** (compared read-only on 2026-11-28 against the Lovable project `kretopia-app`). Do not overwrite them wholesale.
+
+| Finding in production | Consequence |
+|---|---|
+| `create-checkout` still expects `{ priceId }` and checks `isAllowedSubscriptionPrice`; the published front end already sends `{ tier, interval }` (confirmed in the live `Subscription` chunk) | **Stripe subscription checkout is probably failing today** with "Unknown subscription price". Test it (step 4.0). The repo version fixes it. |
+| `_shared/returnOrigin.ts` and `_shared/subscriptionPrices.ts` do not exist in production | The repo `create-checkout` cannot boot without them: paste both. |
+| `_shared/webhookLedger.ts` is an older version that the Stripe webhooks depend on (it throws instead of returning "unavailable") | **Do not overwrite it.** The Paddle webhook uses its own `_shared/paddleLedger.ts`. |
+| `check-subscription` still calls `recoverPendingFounderPurchase`, has no 401 on invalid sessions and a wildcard CORS | The repo version removed Founder recovery (it assumes Founder is activated by a verified payment webhook). **Do not paste the repo version**; add only the Paddle block below. |
+| `customer-portal` falls back to `https://www.thrivein.io` and has no trusted-origin check | Add only the Paddle block below. |
+
+**4.0 Check Stripe checkout today.** Signed in as a Free test account on the live site, click a paid plan. If you see an error toast ("Unknown subscription price"), checkout is broken independently of Paddle; steps 4.1-4.2 fix it. (It creates a Stripe session but no charge unless you pay.)
+
+**4.1 New files (safe to add, nothing depends on them yet):** `_shared/paddleApi.ts`, `paddleCheckout.ts`, `paddleEntitlements.ts`, `paddleEnv.ts`, `paddleLedger.ts`, `paddleSignature.ts`, `paddleWebhook.ts`; and the new function `paddle-webhook` (`index.ts`). `verify_jwt` **off** for `paddle-webhook` only.
+
+**4.2 Replace `create-checkout`** with the repo version, together with `_shared/returnOrigin.ts` and `_shared/subscriptionPrices.ts`. Before pasting, confirm the live Stripe price ids in `subscriptionPrices.ts` are the ones you sell, and that `STRIPE_MODE` is `live` (or the `STRIPE_PRICE_*_TEST` variables exist).
+
+**4.3 `check-subscription`: add only this block** in production's version, right after the Founder early-return and before `const stripe = new Stripe(...)`, plus `import { grantsAccess } from "../_shared/paddleEntitlements.ts";`:
+```ts
+const { data: billing } = await supabaseClient.from('profiles')
+  .select('subscription_provider, subscription_product_id, subscription_end_date')
+  .eq('user_id', user.id).maybeSingle();
+if (billing?.subscription_provider === 'paddle') {
+  return new Response(JSON.stringify({
+    subscribed: grantsAccess(profileData?.subscription_status), tier: profileData?.subscription_tier ?? 'free',
+    status: profileData?.subscription_status ?? 'none', provider: 'paddle',
+    product_id: billing.subscription_product_id ?? null, subscription_end: billing.subscription_end_date ?? null,
+  }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+}
+```
+**4.4 `customer-portal`: add only this block** after the user is authenticated and before the Stripe customer lookup, plus `import { assertPaddleEnv } from "../_shared/paddleEnv.ts"; import { createPortalSession } from "../_shared/paddleApi.ts";`:
+```ts
+const { data: billing } = await supabaseClient.from("profiles")
+  .select("subscription_provider, paddle_customer_id, paddle_subscription_id").eq("user_id", user.id).maybeSingle();
+if (billing?.subscription_provider === "paddle") {
+  if (!billing.paddle_customer_id) throw new Error("No billing account found for this user");
+  const env = Deno.env.toObject();
+  const portal = await createPortalSession(fetch as never, assertPaddleEnv(env, { apiKey: true }), env.PADDLE_API_KEY as string,
+    { customerId: billing.paddle_customer_id, subscriptionId: billing.paddle_subscription_id });
+  return new Response(JSON.stringify({ url: portal.url, provider: "paddle" }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+}
+```
+Check: `curl -i -X OPTIONS https://kwmcocsitwssrtzkdojh.supabase.co/functions/v1/paddle-webhook` returns 200. **Do not POST-probe** `paddle-webhook` (use Paddle's "send test event"). Logs show no new errors for 10 minutes. Production Stripe webhooks are untouched by this step.
 
 ## 5. Webhook destination (Paddle live)
 Create one live notification destination, URL `https://kwmcocsitwssrtzkdojh.supabase.co/functions/v1/paddle-webhook`, events: `subscription.created`, `.activated`, `.trialing`, `.updated`, `.past_due`, `.paused`, `.resumed`, `.canceled`, `transaction.completed`, `transaction.payment_failed`. Copy its secret key into `PADDLE_WEBHOOK_SECRET` (step 6). Never delete or recreate it afterwards: that rotates the secret.
