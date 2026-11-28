@@ -21,6 +21,7 @@ import { MilestoneBoard } from "@/components/project/MilestoneBoard";
 import { InvoiceGenerator } from "@/components/project/InvoiceGenerator";
 import { MarkPaidBankTransferDialog } from "@/components/project/finance/MarkPaidBankTransferDialog";
 import { paidProvenanceNote } from "@/lib/invoiceProvenance";
+import { projectFinance } from "@/lib/projectFinanceTotals";
 import { PaymentRequestsReview } from "@/components/project/finance/PaymentRequestsReview";
 import { Landmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -120,39 +121,13 @@ export function FinanceHub({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
-  // Budget math
-  const totals = useMemo(() => {
-    const milestoneTotal = milestones.reduce((s, m) => s + Number(m.amount || 0), 0);
-    const milestonePaid = milestones
-      .filter((m) => m.status === "paid" || m.escrow_status === "captured")
-      .reduce((s, m) => s + Number(m.amount || 0), 0);
-    const milestoneEscrow = milestones
-      .filter((m) => m.escrow_status === "authorized")
-      .reduce((s, m) => s + Number(m.amount || 0), 0);
+  // Budget math: one set of figures per currency, money documented twice counted once (src/lib/projectFinanceTotals.ts).
+  const finance = useMemo(() => projectFinance(milestones, invoices, project?.currency), [milestones, invoices, project?.currency]);
+  const [chosenCurrency, setChosenCurrency] = useState<string | null>(null);
+  const totals = finance.byCurrency.find((c) => c.currency === chosenCurrency) ?? finance.byCurrency[0] ?? null;
+  const money = (n: number) => (totals ? new Intl.NumberFormat(undefined, { style: "currency", currency: totals.currency, maximumFractionDigits: 2 }).format(n) : "—");
 
-    const invoiced = invoices
-      .filter((i) => (i.document_type || "invoice") === "invoice")
-      .reduce((s, i) => s + Number(i.total_amount || i.amount || 0), 0);
-    const invoicePaid = invoices
-      .filter((i) => i.status === "paid")
-      .reduce((s, i) => s + Number(i.total_amount || i.amount || 0), 0);
-    const invoiceOpen = invoices
-      .filter((i) => ["sent", "viewed", "overdue"].includes(i.status))
-      .reduce((s, i) => s + Number(i.total_amount || i.amount || 0), 0);
-
-    return {
-      milestoneTotal,
-      milestonePaid,
-      milestoneEscrow,
-      invoiced,
-      invoicePaid,
-      invoiceOpen,
-      totalEarned: milestonePaid + invoicePaid,
-      totalPending: milestoneTotal - milestonePaid + invoiceOpen,
-    };
-  }, [milestones, invoices]);
-
-  const progressPct = totals.milestoneTotal
+  const progressPct = totals && totals.milestoneTotal
     ? Math.min(100, (totals.milestonePaid / totals.milestoneTotal) * 100)
     : 0;
 
@@ -233,8 +208,8 @@ export function FinanceHub({
               Project Finance
             </p>
             <h2 className="text-2xl md:text-3xl font-black">
-              ${totals.totalEarned.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-              <span className="text-base font-medium text-muted-foreground ml-2">earned</span>
+              {money(totals?.totalEarned ?? 0)}
+              <span className="text-base font-medium text-muted-foreground ml-2">{totals ? `${totals.currency} · recorded as paid` : "no recorded money yet"}</span>
             </h2>
           </div>
           <Button
@@ -252,7 +227,7 @@ export function FinanceHub({
         <div className="space-y-2 mb-4">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">
-              ${totals.milestonePaid.toFixed(0)} of ${totals.milestoneTotal.toFixed(0)} milestone budget
+              {money(totals?.milestonePaid ?? 0)} of {money(totals?.milestoneTotal ?? 0)} milestone budget
             </span>
             <span className="font-bold text-primary">{progressPct.toFixed(0)}%</span>
           </div>
@@ -263,29 +238,47 @@ export function FinanceHub({
           <StatPill
             icon={<CheckCircle2 className="h-3.5 w-3.5" />}
             label="Paid"
-            value={`$${totals.milestonePaid.toFixed(0)}`}
+            value={money(totals?.milestonePaid ?? 0)}
             tone="success"
           />
           <StatPill
             icon={<Clock className="h-3.5 w-3.5" />}
             label="In escrow"
-            value={`$${totals.milestoneEscrow.toFixed(0)}`}
+            value={money(totals?.milestoneEscrow ?? 0)}
             tone="energy"
           />
           <StatPill
             icon={<Receipt className="h-3.5 w-3.5" />}
             label="Open invoices"
-            value={`$${totals.invoiceOpen.toFixed(0)}`}
+            value={money(totals?.invoiceOpen ?? 0)}
             tone="primary"
           />
           <StatPill
             icon={<TrendingUp className="h-3.5 w-3.5" />}
             label="Total pending"
-            value={`$${totals.totalPending.toFixed(0)}`}
+            value={money(totals?.totalPending ?? 0)}
             tone="muted"
           />
         </div>
 
+        {finance.byCurrency.length > 1 && (
+          <label className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+            Currency
+            <select
+              value={totals?.currency ?? ""}
+              onChange={(event) => setChosenCurrency(event.target.value)}
+              className="rounded-md border border-border bg-background px-2 py-1 text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {finance.byCurrency.map((c) => <option key={c.currency} value={c.currency}>{c.currency}</option>)}
+            </select>
+            <span>Amounts in different currencies are never added together.</span>
+          </label>
+        )}
+        {finance.excluded > 0 && (
+          <p className="mt-2 text-[11px] text-muted-foreground">
+            {finance.excluded} record{finance.excluded === 1 ? " has" : "s have"} no valid currency and {finance.excluded === 1 ? "is" : "are"} left out of these figures.
+          </p>
+        )}
         <p className="text-[11px] text-muted-foreground mt-3 flex items-center gap-1.5">
           <Link2 className="h-3 w-3" />
           Every paid milestone & invoice automatically syncs to your KrePay P&L.
