@@ -3,6 +3,8 @@
 // tests). Values are never returned in errors or logs — only names and key classes.
 //
 //   BILLING_PROVIDER          stripe (default) | paddle        which provider checkout / portal / sync use
+//   PADDLE_ALLOWED_USER_IDS   optional, comma-separated user ids: while set, ONLY these members get Paddle checkout (everyone else stays on
+//                             Stripe). It is how a live test runs before the plan is opened to customers. Empty or unset = everyone.
 //   PADDLE_ENV                sandbox | live                    required when BILLING_PROVIDER=paddle
 //   PADDLE_API_KEY            pdl_sdbx_apikey_… | pdl_live_apikey_…        server only
 //   PADDLE_WEBHOOK_SECRET     endpoint secret key (pdl_ntfset_…)           server only
@@ -25,6 +27,16 @@ export function billingProvider(env: EnvSource): BillingProvider {
   const raw = (env.BILLING_PROVIDER ?? "stripe").trim().toLowerCase();
   if (raw !== "stripe" && raw !== "paddle") throw new Error(`Invalid BILLING_PROVIDER (expected "stripe" or "paddle")`);
   return raw;
+}
+
+/**
+ * Which provider starts a checkout for this member. BILLING_PROVIDER decides for everyone, unless PADDLE_ALLOWED_USER_IDS narrows
+ * Paddle to a list of testers. Existing Paddle members keep Paddle through their stored provider, not through this function.
+ */
+export function providerForUser(env: EnvSource, userId: string): BillingProvider {
+  if (billingProvider(env) !== "paddle") return "stripe";
+  const allowed = (env.PADDLE_ALLOWED_USER_IDS ?? "").split(",").map((v) => v.trim().toLowerCase()).filter(Boolean);
+  return allowed.length === 0 || allowed.includes(userId.toLowerCase()) ? "paddle" : "stripe";
 }
 
 const keyClass = (key: string): PaddleEnvironment | null =>
