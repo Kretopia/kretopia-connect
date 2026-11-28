@@ -9,6 +9,7 @@ import {
   type PriceInterval,
 } from "../_shared/subscriptionPrices.ts";
 import { corsFor } from '../_shared/guard.ts';
+import { billingProvider, CheckoutRefusal, createPaddleCheckout } from "../_shared/paddleCheckout.ts";
 
 
 serve(async (req) => {
@@ -30,6 +31,24 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
     const { tier, interval } = await req.json();
+
+    // BILLING_PROVIDER=paddle: the browser gets a transaction to open with Paddle.js; Stripe stays the default.
+    if (billingProvider(Deno.env.toObject()) === "paddle") {
+      const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", { auth: { persistSession: false } });
+      const { data: row, error: rowError } = await admin.from("profiles").select("subscription_tier, subscription_status, subscription_provider, stripe_customer_id").eq("user_id", user.id).maybeSingle();
+      // Without the member's current billing state a second subscription cannot be ruled out: refuse rather than guess.
+      if (rowError) throw new Error("Billing profile unavailable");
+      try {
+        const result = await createPaddleCheckout({
+          env: Deno.env.toObject(), fetchFn: fetch as never, userId: user.id, tier, interval,
+          existing: { tier: row?.subscription_tier ?? null, status: row?.subscription_status ?? null, provider: row?.subscription_provider ?? null, hasStripeCustomer: Boolean(row?.stripe_customer_id) },
+        });
+        return new Response(JSON.stringify(result), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 });
+      } catch (e) {
+        if (e instanceof CheckoutRefusal) return new Response(JSON.stringify({ error: e.message }), { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: e.status });
+        throw e;
+      }
+    }
     if (!tier || !isKnownSubscriptionTier(tier)) throw new Error("Unknown or missing subscription tier");
     const normalizedInterval: PriceInterval = interval === "yearly" ? "yearly" : "monthly";
     // Resolved server-side (test vs. live) from STRIPE_MODE — never trust a

@@ -25,7 +25,7 @@ export function milestoneReturnNotice(status: string | null): ReturnNotice | nul
     return {
       kind: "pending",
       title: "Back from checkout",
-      description: "Stripe has not confirmed the payment yet. The milestone updates here once it does.",
+      description: "The payment provider has not confirmed the payment yet. The milestone updates here once it does.",
     };
   }
   if (status === "cancelled") return { kind: "cancelled", title: "Payment cancelled", description: "No charge was made." };

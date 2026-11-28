@@ -42,10 +42,10 @@ export function classifyLedgerError(error: unknown): Exclude<LedgerClaim, "claim
   return "unavailable";
 }
 
-export async function claimWebhookEvent(db: Db, event: { id: string; type: string }): Promise<LedgerClaim> {
+export async function claimWebhookEvent(db: Db, event: { id: string; type: string }, table = "stripe_webhook_events"): Promise<LedgerClaim> {
   let error: unknown;
   try {
-    ({ error } = await db.from("stripe_webhook_events").insert({
+    ({ error } = await db.from(table).insert({
       event_id: event.id,
       type: event.type,
       payload: event as unknown as Record<string, unknown>,
@@ -65,9 +65,9 @@ export async function claimWebhookEvent(db: Db, event: { id: string; type: strin
 }
 
 /** Gives the event's ledger row back so Stripe's retry is processed. Best effort: returns false if it could not. */
-export async function releaseWebhookEvent(db: Db, eventId: string): Promise<boolean> {
+export async function releaseWebhookEvent(db: Db, eventId: string, table = "stripe_webhook_events"): Promise<boolean> {
   try {
-    const { error } = await db.from("stripe_webhook_events").delete().eq("event_id", eventId);
+    const { error } = await db.from(table).delete().eq("event_id", eventId);
     return !error;
   } catch (_e) {
     return false;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { isPaidTier, milestoneReturnNotice, subscriptionReturnState } from "../checkoutReturn";
 
 describe("a browser return from checkout is not a payment", () => {
-  it("?payment=success is a neutral notice that says Stripe has not confirmed it", () => {
+  it("?payment=success is a neutral notice that says the payment provider has not confirmed it", () => {
     const n = milestoneReturnNotice("success");
     expect(n?.kind).toBe("pending");
     expect(`${n?.title} ${n?.description}`).not.toMatch(/received|paid|success/i);
