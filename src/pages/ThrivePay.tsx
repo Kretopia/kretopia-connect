@@ -33,6 +33,7 @@ import { SnapReceiptFAB } from "@/components/thrivepay/SnapReceiptFAB";
 import { PaymentLinksSection } from "@/components/thrivepay/PaymentLinksSection";
 import { TransactionDetailDrawer, type TransactionDetail } from "@/components/thrivepay/TransactionDetailDrawer";
 import { TrustControlsCard } from "@/components/thrivepay/TrustControlsCard";
+import { SubscriptionBillingCard } from "@/components/thrivepay/SubscriptionBillingCard";
 import { InvoiceSepaBeneficiaryCard } from "@/components/thrivepay/InvoiceSepaBeneficiaryCard";
 import { FeaturePageHeader } from "@/components/features/FeaturePageHeader";
 import { StudioFeatureShell } from "@/components/studio-reference/StudioFeatureShell";
@@ -322,6 +323,9 @@ export default function ThrivePay() {
             </section>
           </>
         )}
+        <section aria-label="Subscription and billing" className="mb-6">
+          <SubscriptionBillingCard />
+        </section>
 
         <WalletTopUpDialog open={topUpDialogOpen} onOpenChange={setTopUpDialogOpen} />
         <WalletTransferDialog
