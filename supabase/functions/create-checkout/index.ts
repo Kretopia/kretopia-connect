@@ -9,7 +9,8 @@ import {
   type PriceInterval,
 } from "../_shared/subscriptionPrices.ts";
 import { corsFor } from '../_shared/guard.ts';
-import { billingProvider, CheckoutRefusal, createPaddleCheckout } from "../_shared/paddleCheckout.ts";
+import { CheckoutRefusal, createPaddleCheckout } from "../_shared/paddleCheckout.ts";
+import { providerForUser } from "../_shared/paddleEnv.ts";
 
 
 serve(async (req) => {
@@ -32,8 +33,8 @@ serve(async (req) => {
 
     const { tier, interval } = await req.json();
 
-    // BILLING_PROVIDER=paddle: the browser gets a transaction to open with Paddle.js; Stripe stays the default.
-    if (billingProvider(Deno.env.toObject()) === "paddle") {
+    // BILLING_PROVIDER=paddle (optionally limited to PADDLE_ALLOWED_USER_IDS): the browser gets a transaction to open with Paddle.js; Stripe stays the default.
+    if (providerForUser(Deno.env.toObject(), user.id) === "paddle") {
       const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", { auth: { persistSession: false } });
       const { data: row, error: rowError } = await admin.from("profiles").select("subscription_tier, subscription_status, subscription_provider, stripe_customer_id").eq("user_id", user.id).maybeSingle();
       // Without the member's current billing state a second subscription cannot be ruled out: refuse rather than guess.

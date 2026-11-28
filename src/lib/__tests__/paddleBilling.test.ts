@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any -- test doubles for a query builder and untyped provider payloads */
 import { describe, expect, it, vi } from "vitest";
 import { buildPaddleSignatureHeader, signCheckoutBinding, verifyCheckoutBinding, verifyPaddleSignature } from "../../../supabase/functions/_shared/paddleSignature";
-import { assertPaddleEnv, billingProvider, checkPaddleEnv, paddlePrices, priceEnvName, PAID_TIERS, INTERVALS } from "../../../supabase/functions/_shared/paddleEnv";
+import { assertPaddleEnv, billingProvider, checkPaddleEnv, paddlePrices, priceEnvName, providerForUser, PAID_TIERS, INTERVALS } from "../../../supabase/functions/_shared/paddleEnv";
 import { decidePaddleEntitlement, type CurrentBilling, type PaddleEvent } from "../../../supabase/functions/_shared/paddleEntitlements";
 import { handlePaddleWebhook } from "../../../supabase/functions/_shared/paddleWebhook";
 import { CheckoutRefusal, createPaddleCheckout } from "../../../supabase/functions/_shared/paddleCheckout";
@@ -92,6 +92,24 @@ describe("Paddle environment consistency", () => {
     expect(billingProvider({})).toBe("stripe");
     expect(billingProvider({ BILLING_PROVIDER: " Paddle " })).toBe("paddle");
     expect(() => billingProvider({ BILLING_PROVIDER: "other" })).toThrow();
+  });
+});
+
+describe("who gets Paddle checkout", () => {
+  const tester = "aaaaaaaa-1111-2222-3333-444444444444";
+  const other = "bbbbbbbb-1111-2222-3333-444444444444";
+  it("is Stripe for everyone unless BILLING_PROVIDER=paddle", () => {
+    expect(providerForUser({}, tester)).toBe("stripe");
+    expect(providerForUser({ BILLING_PROVIDER: "stripe", PADDLE_ALLOWED_USER_IDS: tester }, tester)).toBe("stripe");
+  });
+  it("is Paddle for everyone when no tester list is set", () => {
+    expect(providerForUser({ BILLING_PROVIDER: "paddle" }, other)).toBe("paddle");
+    expect(providerForUser({ BILLING_PROVIDER: "paddle", PADDLE_ALLOWED_USER_IDS: " , " }, other)).toBe("paddle");
+  });
+  it("limits Paddle to the listed testers (case and spaces ignored) and keeps everyone else on Stripe", () => {
+    const env = { BILLING_PROVIDER: "paddle", PADDLE_ALLOWED_USER_IDS: ` ${tester.toUpperCase()} , cccccccc-1 ` };
+    expect(providerForUser(env, tester)).toBe("paddle");
+    expect(providerForUser(env, other)).toBe("stripe");
   });
 });
 
