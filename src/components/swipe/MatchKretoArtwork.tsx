@@ -11,6 +11,11 @@ let nextPose = 0;
 /** Rotate cached official-character artwork, never generate media during discovery. */
 export function MatchKretoArtwork({ className }: { className?: string }) {
   const [pose] = useState(() => poses[nextPose++ % poses.length]);
-  return <img src={pose?.url} width={2048} height={2048} alt="" aria-hidden draggable={false}
+  const [failed, setFailed] = useState(false);
+  // If the character cannot load, the Kretopia mark stands in: the card is never left with an empty centre.
+  if (failed || !pose?.url) {
+    return <img src="/brand/kretopia-identity/mark/kretopia-mark-transparent.webp" alt="" aria-hidden draggable={false} className={cn("h-full w-full object-contain p-[18%]", className)} />;
+  }
+  return <img onError={() => setFailed(true)} src={pose?.url} width={2048} height={2048} alt="" aria-hidden draggable={false}
     decoding="async" className={cn("h-full w-full object-contain", className)} />;
 }

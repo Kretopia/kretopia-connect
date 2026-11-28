@@ -41,7 +41,15 @@ export interface SwipeProfile {
   _matchSignals?: MatchSignals;
   /** They have already swiped right on you (the Interested list shows you the same fact). */
   _likedYou?: boolean;
+  /**
+   * Which round of the deck this card belongs to. "fresh": someone you have not answered. "passed": you passed earlier and the
+   * deck has run out of new people, so the round starts again. "second": you have already sent them interest and they have not
+   * answered; the deck only gets here when there is no one else, so there is always someone to meet.
+   */
+  _deckTier?: DeckTier;
 }
+
+export type DeckTier = 'fresh' | 'passed' | 'second';
 
 /** Columns the cross-user safe view (public_profiles_safe) can supply. */
 export const SAFE_VIEW_SELECT =
@@ -81,9 +89,14 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasFetched, setHasFetched] = useState(false);
+  /** A fetch is running, silent or not: an empty deck while this is true is a deck on its way, not an empty one. */
+  const [refreshing, setRefreshing] = useState(false);
 
   const lastFetchedAt = useRef(0);
   const inFlight = useRef(false);
+  /** A scan asked while a fetch was running: it runs once that one ends, so a scan is never swallowed. */
+  const rescanQueued = useRef(false);
+  const runAgain = useRef<(() => void) | null>(null);
   const removedIds = useRef(new Set<string>());
   const interestedIds = useRef(new Set<string>());
 
@@ -94,12 +107,16 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       setLoading(false);
       return;
     }
-    if (inFlight.current) return;
+    if (inFlight.current) {
+      if (forceRescan) rescanQueued.current = true;
+      return;
+    }
     if (restoredUserId) {
       removedIds.current.delete(restoredUserId);
       interestedIds.current.delete(restoredUserId);
     }
     inFlight.current = true;
+    setRefreshing(true);
     lastFetchedAt.current = Date.now();
 
     if (!silent) setLoading(true);
@@ -207,9 +224,10 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       // now only affect ranking (see the tie-break score below), never
       // eligibility. What's left here is "is there anything real to show",
       // not "have they done enough to deserve visibility".
-      const eligible = (fetchedProfiles || []).filter(p => {
-        if (p.user_id === currentUserId || interestedIds.current.has(p.user_id)) return false;
-        if (pendingIds.has(p.user_id)) return false;
+      // `base` is everyone the viewer may ever be shown: never themselves, a connection, someone blocked (either way), an imported
+      // profile that was not claimed, or a profile with no name.
+      const base = (fetchedProfiles || []).filter(p => {
+        if (p.user_id === currentUserId) return false;
         if (connectedIds.has(p.user_id)) return false;
         if (blockedIds.has(p.user_id)) return false;
         // Hide non-ODOS unclaimed profiles from discovery
@@ -218,15 +236,20 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         if (!p.full_name || p.full_name === 'New User' || p.full_name === '') return false;
         return true;
       });
-      let filtered = eligible.filter(p => !swipedIds.has(p.user_id) && !removedIds.current.has(p.user_id));
-      // Only reconsider passes once every unseen candidate is exhausted. Never
-      // recycle pending interests, connections or blocked accounts.
+      // The deck is rounds, and it is never left empty while anyone in `base` exists: first people the viewer has not answered, then,
+      // once those run out, the ones they passed (a pass is a "not now"), then, as a last resort, the ones they already sent interest
+      // to and who have not answered yet (answering again changes nothing and sends nothing: see recordSwipe).
+      let filtered = base.filter(p => !swipedIds.has(p.user_id) && !interestedIds.current.has(p.user_id) && !removedIds.current.has(p.user_id));
+      let tier: DeckTier = 'fresh';
       if (filtered.length === 0 && (forceRescan || removedIds.current.size === 0)) {
-        filtered = eligible;
-        removedIds.current.clear();
+        const passed = base.filter(p => !pendingIds.has(p.user_id) && !interestedIds.current.has(p.user_id));
+        const second = base.filter(p => pendingIds.has(p.user_id) || interestedIds.current.has(p.user_id));
+        if (passed.length > 0) { filtered = passed; tier = 'passed'; }
+        else if (second.length > 0) { filtered = second; tier = 'second'; }
+        if (filtered.length > 0) removedIds.current.clear();
       }
       // A fully excluded pool must not trigger an endless empty-deck rescan.
-      if (eligible.length === 0) removedIds.current.clear();
+      if (base.length === 0) removedIds.current.clear();
 
       // Step 5: Portfolio/credits/awards counts — kept as a ranking
       // tie-break signal only (see scoreProfile below), not a filter.
@@ -287,7 +310,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
         return { score: score + socialProof + interest + hasPhoto, _matchSignals: signals };
       };
 
-      const scored = filtered.map(p => ({ ...p, ...scoreProfile(p), _likedYou: likedYouIds.has(p.user_id) }));
+      const scored = filtered.map(p => ({ ...p, ...scoreProfile(p), _likedYou: likedYouIds.has(p.user_id), _deckTier: tier }));
 
       const cacheKey = `swipe_order_${currentUserId}`;
       if (forceRescan) sessionStorage.removeItem(cacheKey);
@@ -331,9 +354,15 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
       if (!silent) setError(err.message || 'Failed to load profiles');
     } finally {
       inFlight.current = false;
+      setRefreshing(false);
       if (!silent) setLoading(false);
+      if (rescanQueued.current) {
+        rescanQueued.current = false;
+        runAgain.current?.();
+      }
     }
   }, [currentUserId]);
+  runAgain.current = () => { void fetchProfiles(true); };
 
   // Apply filters
   useEffect(() => {
@@ -526,6 +555,7 @@ export function useSwipeProfiles(currentUserId: string | undefined, filters: Swi
     profiles,
     allProfilesCount: allProfiles.length,
     loading,
+    refreshing,
     error,
     fetchProfiles,
     removeProfile
