@@ -22,6 +22,9 @@ const ALLOWED_CLIENT_ENV = new Set([
   "VITE_SITE_URL",
   "VITE_SENTRY_DSN",
   "VITE_GENERATE_STATIC_SOCIAL_PAGES",
+  // Paddle.js client-side token ("test_" / "live_") and its environment label: public by design, the page that hosts Paddle's default payment link needs both.
+  "VITE_PADDLE_CLIENT_TOKEN",
+  "VITE_PADDLE_ENV",
   // Built-ins Vite always provides.
   "PROD",
   "DEV",

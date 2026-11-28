@@ -105,6 +105,7 @@ const AdminWeeklyNote = lazy(() => import("./pages/AdminWeeklyNote"));
 const AdminDisputes = lazy(() => import("./pages/AdminDisputes"));
 const Settings = lazy(() => import("./pages/Settings"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
+const BillingCheckout = lazy(() => import("./pages/BillingCheckout"));
 const PaymentCanceled = lazy(() => import("./pages/PaymentCanceled"));
 const Terms = lazy(() => import("./pages/Terms"));
 const Privacy = lazy(() => import("./pages/Privacy"));
@@ -424,6 +425,8 @@ const AppContent = () => {
             <Route path="/thrivemoney" element={<Navigate to="/thrivepay?tab=earnings" replace />} />
             <Route path="/purchase-success" element={<PaymentSuccess />} />
             <Route path="/payment-success" element={<PaymentSuccess />} />
+            {/* Paddle's default payment link (subscriptions only): Paddle sends buyers here with ?_ptxn=. Not under /pay, which is creator payment links. */}
+            <Route path="/billing/checkout" element={<BillingCheckout />} />
             <Route path="/payment-canceled" element={<PaymentCanceled />} />
             <Route path="/pay/invoice/:id" element={<PayInvoice />} />
             <Route path="/pay/:slug" element={<PayLink />} />
