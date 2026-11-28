@@ -40,7 +40,7 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
 
-  const { profiles, loading, error, fetchProfiles, removeProfile } = useSwipeProfiles(user?.id, filters);
+  const { profiles, loading, refreshing, error, fetchProfiles, removeProfile } = useSwipeProfiles(user?.id, filters);
   const { recordSwipe } = useSwipeActions(user?.id);
   const { offers: externalOffers, resolve: resolveOffer, restore: restoreOffer } = useExternalOffers(user?.id, offers);
   const [profilesSinceOffer, setProfilesSinceOffer] = useState(0);
@@ -103,6 +103,13 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
           userId: result.matchedProfile.user_id
         });
       }
+    } else if (profile._deckTier === 'second') {
+      // Their interest was sent earlier and nothing is sent twice: say so instead of repeating the first message.
+      toast('Already on its way', {
+        description: "You showed interest before. We'll tell you the moment they answer.",
+        icon: <img src="/brand/kretopia-identity/mark/kretopia-mark-transparent.webp" alt="" className="h-5 w-5" />,
+        duration: 4500,
+      });
     } else {
       toast.success('Kretopia interest sent', {
         description: 'Pending for now — if they connect too, your new connection will appear in Connected.',
@@ -140,6 +147,21 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
     });
     removeProfile(profile.user_id);
   }, [recordSwipe, removeProfile, navigate]);
+
+  /** Invite someone: the share sheet where there is one, otherwise the link on the clipboard. */
+  const inviteCreative = useCallback(async () => {
+    const url = `${window.location.origin}/auth?tab=signup`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'Join me on Kretopia', text: 'Real creatives, real Passports. Meet the people behind the work.', url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      toast.success('Invite link copied', { description: 'Send it to a creative you would love to meet.' });
+    } catch {
+      /* the share sheet was dismissed */
+    }
+  }, []);
 
   const handleViewProfile = useCallback((profile: SwipeProfile) => {
     setPreviewProfile(profile);
@@ -240,16 +262,30 @@ export function SwipeFeature({ onMatch, filters = DEFAULT_SWIPE_FILTERS, onProfi
   }
 
   if (!current) {
-    // Scan now and Grid already sit directly above the deck. Keep only the branded visual here.
-    return <MatchStateCard />;
+    // A deck on its way (a scan, a top-up, the end of a round) is a wait, not an empty deck.
+    if (refreshing) {
+      return <MatchStateCard title="Lining up your next matches" description="Checking for new Passports and creators worth a second look." busy />;
+    }
+    // Nobody at all can be shown: everyone is yourself, already connected or off-limits. Say so, and give a way to change it.
+    return (
+      <MatchStateCard title="Everyone available is already in your circle" description="New creators join Kretopia every day. Bring someone you would love to meet.">
+        <Button variant="hero" className="min-h-12" onClick={() => void inviteCreative()}>Invite a creative</Button>
+      </MatchStateCard>
+    );
   }
+  const tier = current.type === 'profile' ? current.item._deckTier ?? 'fresh' : 'fresh';
+  const freshCount = profiles.filter(p => (p._deckTier ?? 'fresh') === 'fresh').length;
 
   return (
     <div className="k-match-stage w-full space-y-2">
       {/* Counter + Undo */}
       <div className="mx-auto flex h-7 w-full max-w-[460px] items-center justify-between gap-2 px-2">
         <p className="text-xs text-muted-foreground">
-          {profiles.length} creator{profiles.length !== 1 ? 's' : ''} to discover
+          {tier === 'passed'
+            ? "You've met everyone new. These are people you passed earlier."
+            : tier === 'second'
+              ? 'Interest already sent. Waiting for their answer.'
+              : `${freshCount} creator${freshCount !== 1 ? 's' : ''} to discover`}
           {externalOffers.length > 0 && ` · ${externalOffers.length} offer${externalOffers.length !== 1 ? 's' : ''} found outside Kretopia`}
         </p>
         {swipeHistory.length > 0 && (

@@ -153,11 +153,12 @@ describe("Match deck with offers: the order", () => {
     expect(screen.queryByText(/All Caught Up/)).not.toBeInTheDocument();
   });
 
-  it("with no eligible candidates keeps the branded visual without duplicating Scan or Grid", () => {
+  it("with no eligible candidates shows the branded card with a way to invite, without duplicating Scan or Grid", () => {
     state.people = [];
     state.offers = [];
     renderDeck();
-    expect(screen.getByRole("article", { name: "Kretopia Match" })).toBeVisible();
+    expect(screen.getByRole("article", { name: "Everyone available is already in your circle" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Invite a creative" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "Scan now" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Browse the grid" })).toBeNull();
   });

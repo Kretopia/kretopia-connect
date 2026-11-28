@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, ScanSearch, Users, Globe2, Orbit } from "lucide-react";
+import { ArrowRight, EyeOff, Handshake, Heart, MessageCircle, Orbit, ScanSearch, ShieldCheck, Sparkles, Users, Globe2, type LucideIcon } from "lucide-react";
 import { ScoutScanButton } from "@/components/scout/ScoutScanButton";
 import { KretopiaSpinner } from "@/components/brand/KretopiaLoader";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -10,6 +10,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+
+/** What Match promises, each one true of how the deck behaves. */
+const PROMISES: { Icon: LucideIcon; label: string }[] = [
+  { Icon: ShieldCheck, label: "Real Passports" },
+  { Icon: Handshake, label: "Mutual only" },
+  { Icon: EyeOff, label: "Private passes" },
+];
+
+/** The three steps, in words that match the deck: Connect and Pass are its two actions, a match opens messaging. */
+const STEPS: { Icon: LucideIcon; title: string; body: string; color: [string, string] }[] = [
+  { Icon: Sparkles, title: "Discover real Passports", body: "Your deck follows craft, city, past collaborations and shared interests. Nobody is hidden for scoring low.", color: ["--k-g-1", "--k-g-2"] },
+  { Icon: Heart, title: "Connect or Pass", body: "Connect shows interest. Pass is private: nobody is told when you pass, and a pass can come back later.", color: ["--k-g-2", "--k-g-3"] },
+  { Icon: MessageCircle, title: "Match and talk", body: "When the interest is mutual you are connected, and messaging opens. Nothing is ever sent without you.", color: ["--k-g-3", "--k-g-4"] },
+];
 
 /** Kreto Match gives immediate, deterministic guidance from real deck events; no AI request or credits. */
 export function MatchPulse() {
@@ -82,17 +96,55 @@ export function MatchPulse() {
   };
 
   return (
-    <section aria-label="Kreto Match" className="min-w-0">
-      <div className="py-2 sm:py-4">
-        <header className="flex items-start justify-between gap-3">
+    <section aria-label="Kreto Match" className="min-w-0 space-y-4">
+      {/* The brand and the promise: what Match is, in one breath. */}
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <span aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px" style={{ background: "linear-gradient(90deg, var(--k-g-1), var(--k-g-2) 35%, var(--k-g-3) 65%, var(--k-g-4))" }} />
+        <span aria-hidden className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full opacity-40 blur-3xl" style={{ background: "radial-gradient(closest-side, var(--k-g-2), transparent)" }} />
+        <header className="relative flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="mb-3 flex items-center gap-2"><BrandLogo iconOnly size="sm" /><span className="text-xs font-semibold text-muted-foreground">KRETOPIA MATCH</span></div>
+            <div className="mb-3 flex items-center gap-2"><BrandLogo iconOnly size="sm" /><span className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Kretopia Match</span></div>
             <h2 className="font-display text-2xl font-bold leading-tight text-foreground sm:text-3xl">Your Creative <span className="k-gradient-text">Universe</span></h2>
             <p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Globe2 className="h-4 w-4 shrink-0 text-primary" />Across borders. Across disciplines.</p>
           </div>
           <Button variant="outline" size="icon" className="shrink-0 lg:hidden" aria-label="Show Kreto 3D" title="Your creative universe" aria-expanded={universeOpen} onClick={() => setUniverseOpen(v => !v)}><Orbit className="h-5 w-5" /></Button>
         </header>
-        <div className={cn("mt-2", universeOpen ? "block" : "hidden lg:block")}>
+        <p className="relative mt-3 max-w-prose text-sm leading-relaxed text-foreground/80">
+          Match introduces you to real creatives, one Passport at a time. You decide who to connect with, and messaging opens only when the interest is mutual.
+        </p>
+        <ul className="relative mt-4 flex flex-wrap gap-2" aria-label="What Match promises">
+          {PROMISES.map(({ Icon, label }) => (
+            <li key={label} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-foreground/80">
+              <Icon className="h-3.5 w-3.5 text-primary" aria-hidden />{label}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* How it works: three steps, each in one of the logo's colours. */}
+      <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">How Match works</h3>
+        <ol className="mt-4 space-y-4">
+          {STEPS.map(({ Icon, title, body, color }, i) => (
+            <li key={title} className="flex gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-sm" style={{ background: `linear-gradient(135deg, var(${color[0]}), var(${color[1]}))` }}>
+                <Icon className="h-5 w-5" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground"><span className="mr-1.5 text-muted-foreground">{i + 1}.</span>{title}</p>
+                <p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">{body}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 rounded-xl bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+          Tip: flip a card to read the full public Passport. On a keyboard, ← passes and → connects.
+        </p>
+      </div>
+
+      {/* The universe, and the live deck. */}
+      <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className={cn(universeOpen ? "block" : "hidden lg:block")}>
           <Suspense fallback={<div className="flex h-[300px] items-center justify-center"><KretopiaSpinner className="h-8 w-8" /></div>}>
             <KretoNetworkScene connections={noConnections} onProfile={() => {}} />
           </Suspense>
@@ -101,7 +153,8 @@ export function MatchPulse() {
         <p className="mt-2 text-[11px] text-muted-foreground">{scanning ? "Reading real profile signals…" : error ? "Refresh unavailable" : lastScan ? `${count ?? 0} profiles · checked ${lastScan.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Real people. Mutual interest. Worldwide discovery."}</p>
         <div className="mt-4"><ScoutScanButton finitePulse label={scanning ? "Scanning…" : error ? "Try again" : "Scan now"} busy={scanning} onClick={scan} /></div>
       </div>
-      <div className="border-t border-border py-4">
+
+      <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="mb-3 flex flex-wrap gap-2">
           <Button type="button" variant="outline" className="h-10 justify-start gap-2 text-xs" onClick={() => navigate("/match?tab=browse&view=grid")}>
             <Users className="h-4 w-4 text-primary" aria-hidden /> Explore every creator

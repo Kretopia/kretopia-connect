@@ -61,6 +61,21 @@ describe("Match discovery controls", () => {
     expect(screen.getByText("Refresh unavailable")).toBeVisible();
     window.removeEventListener("match:scan", listener);
   });
+  it("explains Match in the panel: what it promises, how it works in three steps, and how to use a card", () => {
+    render(<MemoryRouter><MatchPulse /></MemoryRouter>);
+    expect(screen.getByText("Kretopia Match")).toBeVisible();
+    expect(screen.getByRole("heading", { name: /Your Creative Universe/ })).toBeVisible();
+    const promises = screen.getByRole("list", { name: "What Match promises" });
+    expect(Array.from(promises.querySelectorAll("li")).map((li) => li.textContent)).toEqual(["Real Passports", "Mutual only", "Private passes"]);
+    expect(screen.getByRole("heading", { name: "How Match works" })).toBeVisible();
+    const steps = Array.from(document.querySelectorAll("ol > li")).map((li) => li.querySelector("p")?.textContent);
+    expect(steps).toEqual(["1.Discover real Passports", "2.Connect or Pass", "3.Match and talk"]);
+    expect(screen.getByText(/flip a card to read the full public Passport/i)).toBeVisible();
+    // the promises are the deck's own rules: messaging only after a mutual match, nothing sent without the member
+    expect(screen.getByText(/messaging opens only when the interest is mutual/i)).toBeVisible();
+    expect(screen.getByText(/Nothing is ever sent without you/)).toBeVisible();
+  });
+
   it("answers a matching question instantly without an AI request", () => {
     render(<MemoryRouter><MatchPulse /></MemoryRouter>);
     fireEvent.change(screen.getByLabelText("Ask Kreto Match about matching"), { target: { value: "How do messages work?" } });

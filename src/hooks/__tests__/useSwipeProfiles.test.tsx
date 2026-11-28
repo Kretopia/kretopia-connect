@@ -184,6 +184,60 @@ describe("useSwipeProfiles", () => {
     await waitFor(() => expect(result.current.profiles.map(p => p.user_id)).toEqual(["passed"]));
   });
 
+  it("is never empty while anyone is left: with no one new and no pass, the people you already sent interest to come back as a second look", async () => {
+    db.safeProfiles = [member("pending-a"), member("pending-b")];
+    db.mySwipes = [{ target_id: "pending-a", direction: "right" }, { target_id: "pending-b", direction: "right" }];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles.map(p => p.user_id).sort()).toEqual(["pending-a", "pending-b"]);
+    expect(result.current.profiles.every(p => p._deckTier === "second")).toBe(true);
+  });
+
+  it("marks the round each card belongs to: new people first, then passes, then a second look", async () => {
+    db.safeProfiles = [member("fresh")];
+    const first = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(first.result.current.loading).toBe(false));
+    expect(first.result.current.profiles[0]._deckTier).toBe("fresh");
+    first.unmount();
+    sessionStorage.clear();
+    db.mySwipes = [{ target_id: "fresh", direction: "left" }];
+    const second = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(second.result.current.loading).toBe(false));
+    expect(second.result.current.profiles[0]._deckTier).toBe("passed");
+  });
+
+  it("keeps offering someone, round after round, when you answer the only person left", async () => {
+    db.safeProfiles = [member("only")];
+    db.mySwipes = [{ target_id: "only", direction: "right" }];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    for (let round = 0; round < 3; round++) {
+      expect(result.current.profiles.map(p => p.user_id)).toEqual(["only"]);
+      act(() => result.current.removeProfile("only", "right"));
+      await waitFor(() => expect(result.current.profiles.map(p => p.user_id)).toEqual(["only"]));
+    }
+  });
+
+  it("is empty only when nobody can ever be shown: everyone is yourself, connected or blocked", async () => {
+    db.safeProfiles = [member("me"), member("blocked"), member("connected")];
+    db.blocks = [{ blocked_user_id: "blocked", blocker_id: "blocked" }];
+    db.connections = [{ connected_user_id: "connected", user_id: "connected" }];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(result.current.profiles).toEqual([]);
+  });
+
+  it("reports a refresh in progress, so an empty deck on its way is not shown as an empty one", async () => {
+    db.safeProfiles = [member("a")];
+    const { result } = renderHook(() => useSwipeProfiles("me"));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    await waitFor(() => expect(result.current.refreshing).toBe(false));
+    let pending: Promise<void> = Promise.resolve();
+    act(() => { pending = result.current.fetchProfiles(true, true); });
+    await act(async () => { await pending; });
+    expect(result.current.refreshing).toBe(false);
+  });
+
   it("offers genuine users without onboarding, photo, role or work requirements", async () => {
     db.safeProfiles = [member("new", { onboarding_completed: false, role: "", avatar_url: null, bio: null })];
     const { result } = renderHook(() => useSwipeProfiles("me"));
