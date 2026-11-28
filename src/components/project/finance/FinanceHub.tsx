@@ -22,6 +22,7 @@ import { InvoiceGenerator } from "@/components/project/InvoiceGenerator";
 import { MarkPaidBankTransferDialog } from "@/components/project/finance/MarkPaidBankTransferDialog";
 import { paidProvenanceNote } from "@/lib/invoiceProvenance";
 import { projectFinance } from "@/lib/projectFinanceTotals";
+import { invoiceLedgerStatus, LEDGER_TONE_CLASS } from "@/lib/ledgerStatus";
 import { PaymentRequestsReview } from "@/components/project/finance/PaymentRequestsReview";
 import { Landmark } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -56,14 +57,6 @@ interface InvoiceLite {
   /** Present once 20261015100000 is applied; absent before, which reads as "recorded by the issuer". */
   stripe_payment_intent_id?: string | null;
 }
-
-const STATUS_TONE: Record<string, string> = {
-  paid: "bg-success/15 text-success border-success/30",
-  sent: "bg-primary/15 text-primary border-primary/30",
-  viewed: "bg-energy/15 text-energy-foreground border-energy/30",
-  draft: "bg-muted text-muted-foreground border-border",
-  overdue: "bg-destructive/15 text-destructive border-destructive/30",
-};
 
 export function FinanceHub({
   projectId,
@@ -390,12 +383,14 @@ export function FinanceHub({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <p className="font-mono text-xs font-bold">{inv.invoice_number}</p>
-                        <Badge
-                          variant="outline"
-                          className={cn("text-[10px] capitalize", STATUS_TONE[inv.status] || STATUS_TONE.draft)}
-                        >
-                          {inv.status}
-                        </Badge>
+                        {(() => {
+                          const ledger = invoiceLedgerStatus(inv);
+                          return (
+                            <Badge variant="outline" title={ledger.detail} className={cn("text-[10px]", LEDGER_TONE_CLASS[ledger.tone])}>
+                              {ledger.label}
+                            </Badge>
+                          );
+                        })()}
                         {(() => {
                           const note = paidProvenanceNote(inv, currentUserId);
                           return note ? (
