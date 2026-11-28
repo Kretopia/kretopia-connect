@@ -45,6 +45,19 @@ function loadPaddle(): Promise<PaddleGlobal> {
   return loading;
 }
 
+/** A Paddle client-side token belongs to one environment ("test_" sandbox, "live_" live); a mismatch is a configuration error, not a checkout. */
+export function tokenMatchesEnvironment(token: string | undefined, environment: string | undefined): environment is "sandbox" | "live" {
+  if (!token) return false;
+  return (environment === "sandbox" && token.startsWith("test_")) || (environment === "live" && token.startsWith("live_"));
+}
+
+/** Loads and initialises Paddle.js. With a `_ptxn` parameter in the URL (a payment link) Paddle.js opens that transaction by itself. */
+export async function initializePaddle(environment: "sandbox" | "live", token: string, eventCallback?: (event: { name?: string }) => void): Promise<void> {
+  const paddle = await loadPaddle();
+  if (environment === "sandbox") paddle.Environment.set("sandbox");
+  paddle.Initialize({ token, eventCallback });
+}
+
 export async function openPaddleCheckout(start: PaddleCheckoutStart, returnTo: string = `${window.location.origin}/payment-success?provider=paddle`): Promise<void> {
   const paddle = await loadPaddle();
   if (start.environment === "sandbox") paddle.Environment.set("sandbox");

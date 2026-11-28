@@ -33,6 +33,7 @@ const ROUTE_IMPORTS: Array<[string, () => Promise<unknown>]> = [
   ["/opportunities", () => import("../pages/Opportunities")],
   ["/settings", () => import("../pages/Settings")],
   ["/search", () => import("../pages/SearchPage")],
+  ["/billing/checkout", () => import("../pages/BillingCheckout")],
   ["/discover", () => import("../pages/Discover")],
   ["/listing", () => import("../pages/ExternalListing")],
   ["/claim-listing", () => import("../pages/ClaimListing")],
