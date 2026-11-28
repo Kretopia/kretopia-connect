@@ -17,7 +17,6 @@ import { SCOUT_PATH } from "../opportunityRoutes";
 
 const app = readFileSync("src/App.tsx", "utf8");
 const pathOf = (to: string) => to.split("?")[0];
-const none = { people: 0, skills: 0, opportunities: 0, events: 0 };
 
 describe("hero search scopes", () => {
   it("are All (the default), People, Scout, Match, Events and SoundStages, in that order", () => {
@@ -49,25 +48,20 @@ describe("hero search scopes", () => {
 });
 
 describe("where a scoped search lands", () => {
-  it("carries the words and opens the scope's own area", () => {
-    expect(scopeSearchTarget("people", "photographer")).toBe("/match?tab=browse&view=grid&q=photographer");
-    expect(scopeSearchTarget("match", "motion design")).toBe("/match?tab=browse&view=grid&q=motion%20design");
-    expect(scopeSearchTarget("scout", "photographer")).toBe(`${SCOUT_PATH}?q=photographer`);
+  it("a generic query opens the Search Page, narrowed to the topic, with the words", () => {
+    expect(scopeSearchTarget("all", "photographer")).toBe("/search?q=photographer");
+    expect(scopeSearchTarget("people", "photographer")).toBe("/search?q=photographer&scope=people");
+    expect(scopeSearchTarget("scout", "photographer")).toBe("/search?q=photographer&scope=scout");
+    expect(scopeSearchTarget("match", "motion design")).toBe("/search?q=motion%20design&scope=match");
+  });
+
+  it("Events and SoundStages are not families of the Search Page: they open their own pages", () => {
     expect(scopeSearchTarget("events", "electronic music")).toBe("/meetup?q=electronic%20music");
     expect(scopeSearchTarget("soundstages", "electronic music")).toBe("/soundstages?q=electronic%20music");
   });
 
   it("trims the words and encodes what would break a URL", () => {
-    expect(scopeSearchTarget("scout", "  a&b=c  ")).toBe("/scout?q=a%26b%3Dc");
-  });
-
-  it("All opens the first area with an answer: people and skills, then Scout, then Events, else the Grid", () => {
-    expect(scopeSearchTarget("all", "x", { ...none, people: 1, opportunities: 2 })).toContain("/match?");
-    expect(scopeSearchTarget("all", "x", { ...none, skills: 1, events: 1 })).toContain("/match?");
-    expect(scopeSearchTarget("all", "x", { ...none, opportunities: 1, events: 1 })).toBe("/scout?q=x");
-    expect(scopeSearchTarget("all", "x", { ...none, events: 1 })).toBe("/meetup?q=x");
-    expect(scopeSearchTarget("all", "x", none)).toBe("/match?tab=browse&view=grid&q=x");
-    expect(scopeSearchTarget("all", "x")).toBe("/match?tab=browse&view=grid&q=x");
+    expect(scopeSearchTarget("scout", "  a&b=c  ")).toBe("/search?q=a%26b%3Dc&scope=scout");
   });
 
   it("only points at routes the app already has", () => {

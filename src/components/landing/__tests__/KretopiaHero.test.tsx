@@ -154,7 +154,7 @@ describe("KretopiaHero — Kreto Universe", () => {
     expect(document.querySelector('[data-scope-pill="scout"]')).toHaveAttribute("aria-checked", "true");
     fireEvent.change(screen.getByRole("combobox"), { target: { value: "photographer" } });
     fireEvent.click(screen.getByRole("button", { name: "Search" }));
-    expect(screen.getByTestId("where").textContent).toBe("/scout?q=photographer");
+    expect(screen.getByTestId("where").textContent).toBe("/search?q=photographer&scope=scout");
     expect(screen.queryByText(/Sign up free to view full results/)).toBeNull();
   });
 
